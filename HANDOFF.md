@@ -1,18 +1,31 @@
 # HANDOFF — Rabbit Hole Map
 
-State of the project as of 2026-08-08, for whoever picks it up next
-(human or agent).
+State of the project as of 2026-08-09, for whoever picks it up next
+(human or agent). Current version: see `package.json` (never hardcode it
+here — it goes stale).
 
 ## Status
 
-**v1.2.5, store-ready.** All tests green: 16 unit tests (`npm test`) and 16
-Playwright e2e tests (`npm run e2e`), both enforced by GitHub Actions CI on
-every push. The complete Web Store submission package exists:
-`release/rabbit-hole-map-1.2.5.zip` (upload this one; older zips predate the
-rabbit mascot / monster frenzy / hunger decay), listing copy in
-`docs/STORE_LISTING.md`, assets in `marketing/store/`, privacy docs in
-place. Not yet uploaded to the store. Git tags `v1.2.3`…`v1.2.5` mark
-releases.
+**Store-ready.** All tests green: 16 unit tests (`npm test`) and 16
+Playwright e2e tests (`npm run e2e`), plus `npm run lint`
+(eslint + prettier), all enforced by GitHub Actions CI on every push. The
+complete Web Store submission package exists: the latest
+`release/rabbit-hole-map-<version>.zip`, listing copy in
+`docs/STORE_LISTING.md`, assets in `marketing/store/` (screenshots, tiles,
+promo video), privacy docs in place. Not yet uploaded to the store.
+
+### Versions: live / queued / skipped
+
+| Version | Tag        | Zip | Store status                                     |
+| ------- | ---------- | --- | ------------------------------------------------ |
+| 1.2.2   | — (no tag) | ✓   | skipped (predates rabbit mascot)                 |
+| 1.2.3   | v1.2.3     | ✓   | skipped                                          |
+| 1.2.4   | v1.2.4     | ✓   | skipped                                          |
+| 1.2.5   | v1.2.5     | ✓   | **queued — upload this one** (nothing live yet)  |
+
+Keep this table current: versions superseded before reaching the store get
+tags but no store upload. Record the submission date + review outcome here
+once uploaded.
 
 ## How it works, in one paragraph
 
@@ -96,25 +109,36 @@ validates the scheme and keeps `package.json` and `manifest.json` in sync.
 
 ## Release & marketing flow
 
-1. `npm run bump` (or `npm run bump -- X.Y.Z`) — odometer versioning, keeps
-   package.json and manifest.json in sync.
-2. Move the CHANGELOG entry under the new version.
-3. `npm test` then `npm run release` → `release/rabbit-hole-map-<v>.zip`
-   (runtime files only, manifest at zip root).
-4. `npm run assets` regenerates `marketing/store/` from the real extension
-   in Chrome for Testing (seeded carbonara→trebuchet session). Screenshot
-   pitch: constellation → untangle → replay → pin → scoreboard.
-5. Commit, `git tag v<version>`, `git push --follow-tags`.
+Two-phase, scripted (`scripts/release.mjs`, modeled on 10block's flow):
 
-Never upload a zip whose version the store has already seen; bump first.
+1. Write the `## [X.Y.Z]` CHANGELOG section for the next version
+   (`npm run bump -- --dry` previews the number). The release refuses to
+   run without it; it becomes the GitHub release notes verbatim.
+2. `npm run release` — preflights (on main, tag/zip don't exist yet,
+   changelog section present), gates (`tsc --noEmit`, `npm run lint`,
+   `npm test`), odometer bump (package.json + manifest.json in lockstep),
+   build, zip runtime files only, `Release vX.Y.Z` commit by explicit
+   pathspec, **annotated** tag (lightweight tags silently don't push with
+   `--follow-tags`).
+3. Review the release commit, then `npm run release:publish` — push main +
+   tag, `gh release create --verify-tag` with the zip and changelog notes.
+4. `npm run assets` regenerates `marketing/store/` from the real extension
+   in Chrome for Testing (seeded carbonara→trebuchet session; shared with
+   the video via `marketing/session.mjs`). Screenshot pitch: constellation
+   → untangle → replay → pin → scoreboard. `npm run assets:video` re-records
+   the ~40s promo video in Playwright Chromium.
+5. Escape hatches: `--dry-run` (gates only), `--zip-only`, `--no-bump`.
+
+Never upload a zip whose version the store has already seen; bump first
+(the script guarantees this — never hand-zip).
 
 ## Testing philosophy
 
 Every user-facing behavior gets an e2e test. The suite is `@playwright/test`
 (10block's pattern): `e2e/fixtures.mjs` provides a persistent context with
 the extension loaded, the extension id, and a local test site; specs are
-split by area (tracking / map / untangle / rabbit / session / popup — 15
-tests, ~40s). Playwright's own Chromium still supports `--load-extension`,
+split by area (tracking / map / untangle / rabbit / session / popup — 16
+tests, ~40s plus a 3-minute hunger-decay soak). Playwright's own Chromium still supports `--load-extension`,
 so no Chrome for Testing is needed for tests (only `npm run assets` still
 uses CfT + puppeteer for marketing captures). CI runs unit + e2e on every
 push (`.github/workflows/ci.yml`) and uploads traces on failure. The e2e
@@ -122,9 +146,15 @@ harness has caught five real bugs so far — extend it with every feature.
 
 ## Ideas discussed but not built
 
-- Upload v1.2.4 to the Web Store (package is ready; needs a hosted URL for
-  the privacy policy and a developer account).
-- Promo video (31s screen recording of a replay run → YouTube → listing).
+- Upload v1.2.5 to the Web Store (package is ready; still needs a developer
+  account). The privacy policy is hosted publicly at
+  https://github.com/billye2/pdfxtn/blob/main/docs/rabbit-hole-map-PRIVACY.md
+  — this repo is private, so the public pdfxtn sibling hosts the canonical
+  copy (same arrangement as 10block). Standing rule: edit
+  `rabbit-hole-map-PRIVACY.md` here and the pdfxtn copy together.
+- Upload the promo video to YouTube and paste the URL into
+  `docs/STORE_LISTING.md` (the video itself exists:
+  `marketing/store/promo-video.webm`, regenerated via `npm run assets:video`).
 - Persist pinned positions and untangle state per session (both currently
   reset on page reload / session switch).
 - Achievements ("visited 50 pages after midnight"), 1-UP jingle at depth

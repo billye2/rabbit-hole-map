@@ -7,6 +7,18 @@ and export the map as a PNG.
 
 Everything stays on your machine. Nothing is ever sent anywhere.
 
+## Scope
+
+Permanent non-goals — these are core to what the product is, don't re-propose
+them:
+
+- **No data ever leaves the machine.** No telemetry, no sync, no accounts, no
+  cloud anything. Local-only storage is the product's whole privacy story
+  (and what the store listing promises).
+- **No runtime dependencies.** The force layout, PNG icon encoder, and sound
+  are hand-rolled on purpose; MV3 CSP forbids remote code anyway.
+- **Incognito is never recorded.**
+
 ## Features
 
 - **Live trail map** — pages become nodes (sized by visits, candy-colored by
@@ -62,10 +74,14 @@ npm run icons     # regenerates icons/ (no image deps — hand-rolled PNG encode
 ## Release
 
 ```sh
-npm run bump      # odometer version bump (1.1.9 -> 1.2.0); add X.Y.Z to jump
-npm run release   # build + zip runtime files -> release/rabbit-hole-map-<v>.zip
-npm run assets    # regenerate marketing/store/ from the live extension
+# 1. write the CHANGELOG section for the next version (npm run bump -- --dry previews it)
+npm run release          # gates (tsc/lint/tests) → bump → zip → Release commit → tag
+npm run release:publish  # push main + tag → GitHub release with the zip attached
+npm run assets           # regenerate marketing/store/ screenshots + tiles
+npm run assets:video     # re-record marketing/store/promo-video.webm
 ```
+
+Escape hatches: `--dry-run` (gates only), `--zip-only`, `--no-bump`.
 
 Store listing copy lives in `docs/STORE_LISTING.md`; privacy docs in
 `rabbit-hole-map-PRIVACY.md` and `docs/privacy-practices-copy.md`.
@@ -74,7 +90,8 @@ Store listing copy lives in `docs/STORE_LISTING.md`; privacy docs in
 
 ```sh
 npm test          # unit tests for the pure graph model (node --test)
-npm run e2e       # Playwright suite: 15 tests against the real extension
+npm run e2e       # Playwright suite: 16 tests against the real extension
+npm run lint      # eslint + prettier --check (lint:fix to auto-fix)
 ```
 
 The e2e suite (`e2e/*.spec.mjs`, `@playwright/test`) loads the unpacked

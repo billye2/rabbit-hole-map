@@ -69,20 +69,25 @@ manifest name and ship a new zip; the listing follows the manifest.)_
 
 Upload from `marketing/store/` (regenerate with `npm run assets`):
 
-| File | Where it goes |
-| --- | --- |
-| `store-icon-128.png` | Store listing icon |
+| File                          | Where it goes                    |
+| ----------------------------- | -------------------------------- |
+| `store-icon-128.png`          | Store listing icon               |
 | `screenshot-1.png` … `-5.png` | Screenshots, in order (1280×800) |
-| `promo-tile-440x280.png` | Small promo tile |
-| `marquee-1400x560.png` | Marquee promo tile |
+| `promo-tile-440x280.png`      | Small promo tile                 |
+| `marquee-1400x560.png`        | Marquee promo tile               |
 
 Screenshot order is the pitch: **the constellation → untangled, one click
 later → the replay → arrange & pin → the scoreboard**.
 
-No promo video yet — if we make one, upload to YouTube and paste the URL here.
+Promo video: `marketing/store/promo-video.webm` (~40s, regenerate with
+`npm run assets:video`). Upload it to YouTube and paste the URL here:
+**YouTube URL: _(pending upload)_**
 
 ## Privacy tab
 
-- Privacy policy URL: host `rabbit-hole-map-PRIVACY.md` (GitHub Pages or a gist)
-  and paste its public URL.
+- Privacy policy URL:
+  https://github.com/billye2/pdfxtn/blob/main/docs/rabbit-hole-map-PRIVACY.md
+  (hosted in the public pdfxtn sibling repo because this repo is private —
+  same arrangement as 10block. When editing `rabbit-hole-map-PRIVACY.md`
+  here, update the pdfxtn copy in the same change.)
 - Copy the answers verbatim from `docs/privacy-practices-copy.md`.
