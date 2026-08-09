@@ -4,7 +4,7 @@
 // ground. Everything uses attribute fills — no CSS — so the PNG export's
 // SVG-clone path renders it as-is.
 import { HUNGER_INTERVAL_MS, hungerShrink, rabbitGrowth, rabbitStages } from '../model.js';
-import { playNibble, playPop, playShrink } from './audio.js';
+import { playNibble, playRoar, playShrink } from './audio.js';
 
 const SVGNS = 'http://www.w3.org/2000/svg';
 const NAVY = '#2b2857';
@@ -22,6 +22,9 @@ const CHASE_HOP_LEN = 95;
 const ALERT_MS = 650;
 const BITES = 3;
 const GROW_PULSE_MS = 450;
+const FRENZY_MS = 10_000; // monster mode after a milestone
+const MONSTER_RED = '#ff2244';
+const AURA = '#6b21a8';
 
 interface Carrot {
   el: SVGGElement;
@@ -54,20 +57,41 @@ function el<K extends keyof SVGElementTagNameMap>(
   return e;
 }
 
-function buildRabbit(parent: SVGGElement): { root: SVGGElement; squash: SVGGElement; bubble: SVGGElement } {
+interface RabbitParts {
+  root: SVGGElement;
+  squash: SVGGElement;
+  bubble: SVGGElement;
+  eye: SVGCircleElement;
+  innerEars: SVGRectElement[];
+  aura: SVGEllipseElement;
+  fangs: SVGPathElement;
+}
+
+function buildRabbit(parent: SVGGElement): RabbitParts {
   const root = el('g', { class: 'rabbit' }, parent);
   const squash = el('g', {}, root);
   // Origin is the rabbit's ground contact point; the sprite is drawn upward.
+  // Dark aura behind everything — invisible until frenzy.
+  const aura = el('ellipse', { class: 'aura', cx: 2, cy: -22, rx: 34, ry: 32, fill: AURA, opacity: 0 }, squash);
   el('circle', { cx: -15, cy: -12, r: 5, fill: WHITE }, squash); // tail
   el('ellipse', { cx: 0, cy: -13, rx: 16, ry: 12, fill: WHITE }, squash); // body
   // ears (behind the head), slightly splayed
   el('rect', { x: 3, y: -55, width: 7, height: 24, rx: 3.5, fill: WHITE, transform: 'rotate(-8 6.5 -43)' }, squash);
   el('rect', { x: 13, y: -54, width: 7, height: 24, rx: 3.5, fill: WHITE, transform: 'rotate(8 16.5 -42)' }, squash);
-  el('rect', { x: 5, y: -52, width: 3, height: 17, rx: 1.5, fill: PINK, transform: 'rotate(-8 6.5 -43)' }, squash);
-  el('rect', { x: 15, y: -51, width: 3, height: 17, rx: 1.5, fill: PINK, transform: 'rotate(8 16.5 -42)' }, squash);
+  const earL = el('rect', { x: 5, y: -52, width: 3, height: 17, rx: 1.5, fill: PINK, transform: 'rotate(-8 6.5 -43)' }, squash);
+  const earR = el('rect', { x: 15, y: -51, width: 3, height: 17, rx: 1.5, fill: PINK, transform: 'rotate(8 16.5 -42)' }, squash);
   el('circle', { cx: 10, cy: -27, r: 10.5, fill: WHITE }, squash); // head
-  el('circle', { cx: 13, cy: -29, r: 1.7, fill: NAVY }, squash); // eye
+  const eye = el('circle', { class: 'eye', cx: 13, cy: -29, r: 1.7, fill: NAVY }, squash); // eye
   el('circle', { cx: 20, cy: -26, r: 1.8, fill: PINK }, squash); // nose
+  // fangs — hidden until frenzy
+  const fangs = el('path', {
+    class: 'fangs',
+    d: 'M 12 -17.5 l 2.4 5.5 l 2.4 -5.5 z M 5.5 -17.5 l 2.4 5.5 l 2.4 -5.5 z',
+    fill: WHITE,
+    stroke: NAVY,
+    'stroke-width': 0.9,
+    visibility: 'hidden',
+  }, squash);
   el('ellipse', { cx: 8, cy: -2.5, rx: 6, ry: 2.5, fill: WHITE }, squash); // front paw
 
   // "!" alert bubble
@@ -82,7 +106,7 @@ function buildRabbit(parent: SVGGElement): { root: SVGGElement; squash: SVGGElem
     'font-weight': 'bold',
     'font-family': 'Arial Rounded MT Bold, sans-serif',
   }, bubble).textContent = '!';
-  return { root, squash, bubble };
+  return { root, squash, bubble, eye, innerEars: [earL, earR], aura, fangs };
 }
 
 function buildCarrot(parent: SVGGElement): { el: SVGGElement; scaleEl: SVGGElement } {
@@ -99,7 +123,7 @@ export function initRabbit(svg: SVGSVGElement): RabbitLayer {
   const layer = el('g', { id: 'burrow-layer', 'pointer-events': 'none' }, svg as unknown as SVGGElement);
   const ground = el('rect', { x: -20, y: 0, width: 40, height: 26, rx: 12, fill: LEAF, opacity: 0.35 }, layer);
   const carrotG = el('g', {}, layer);
-  const { root: rabbitEl, squash, bubble } = buildRabbit(layer);
+  const { root: rabbitEl, squash, bubble, eye, innerEars, aura, fangs } = buildRabbit(layer);
 
   const groundY = () => window.innerHeight - GROUND_LIFT;
   const carrots: Carrot[] = [];
@@ -126,6 +150,17 @@ export function initRabbit(svg: SVGSVGElement): RabbitLayer {
   let nextHungerAt = -1;
   let growPulseAt = -Infinity;
   let shrinkPulseAt = -Infinity;
+  let frenzyUntil = -Infinity; // monster mode window
+  let monsterOn = false;
+
+  function setMonster(on: boolean): void {
+    monsterOn = on;
+    eye.setAttribute('fill', on ? MONSTER_RED : NAVY);
+    eye.setAttribute('r', on ? '2.6' : '1.7');
+    fangs.setAttribute('visibility', on ? 'visible' : 'hidden');
+    for (const e of innerEars) e.setAttribute('fill', on ? MONSTER_RED : PINK);
+    aura.setAttribute('opacity', on ? '0.3' : '0');
+  }
 
   function layoutGround(): void {
     ground.setAttribute('x', '-20');
@@ -158,6 +193,10 @@ export function initRabbit(svg: SVGSVGElement): RabbitLayer {
 
   function onCarrotLanded(now: number): void {
     if (state === 'idle' || state === 'roam') {
+      if (now < frenzyUntil) {
+        state = 'chase'; // a monster doesn't pause to be startled
+        return;
+      }
       state = 'alert';
       stateUntil = now + ALERT_MS;
       midHop = false;
@@ -166,13 +205,14 @@ export function initRabbit(svg: SVGSVGElement): RabbitLayer {
   }
 
   function startHop(now: number, target: number, chase: boolean): void {
-    const len = chase ? CHASE_HOP_LEN : ROAM_HOP_LEN;
+    const frenzy = now < frenzyUntil;
+    const len = (chase ? CHASE_HOP_LEN : ROAM_HOP_LEN) * (frenzy ? 1.5 : 1);
     const delta = Math.max(-len, Math.min(len, target - x));
     hopFrom = x;
     hopTo = x + delta;
     hopStart = now;
-    hopDur = chase ? CHASE_HOP_MS : ROAM_HOP_MS;
-    hopHeight = chase ? 26 : 22;
+    hopDur = (chase ? CHASE_HOP_MS : ROAM_HOP_MS) / (frenzy ? 2 : 1);
+    hopHeight = frenzy ? 32 : chase ? 26 : 22;
     if (Math.abs(delta) > 1) dir = delta > 0 ? 1 : -1;
     midHop = true;
   }
@@ -192,6 +232,14 @@ export function initRabbit(svg: SVGSVGElement): RabbitLayer {
         shrinkPulseAt = now;
         playShrink();
       }
+    }
+
+    // Frenzy wears off: back to the cute (but bigger) form.
+    if (monsterOn && now >= frenzyUntil) setMonster(false);
+    if (monsterOn) {
+      // Pulsing dark aura while the monster is out.
+      aura.setAttribute('rx', String(34 + Math.sin(now / 110) * 5));
+      aura.setAttribute('ry', String(32 + Math.cos(now / 130) * 4));
     }
 
     // --- carrot physics ---
@@ -281,7 +329,8 @@ export function initRabbit(svg: SVGSVGElement): RabbitLayer {
         stateUntil = now + 900;
       } else {
         squashY = 1 - Math.abs(Math.sin(now / 90)) * 0.06; // munching bob
-        if (now - lastBite >= growth.biteMs) {
+        const biteEvery = now < frenzyUntil ? growth.biteMs / 2 : growth.biteMs;
+        if (now - lastBite >= biteEvery) {
           lastBite = now;
           eating.bites++;
           playNibble();
@@ -297,7 +346,10 @@ export function initRabbit(svg: SVGSVGElement): RabbitLayer {
               sizeScale *= Math.pow(1.25, ns - stages); // level up!
               stages = ns;
               growPulseAt = now;
-              playPop();
+              // MILESTONE: unleash the monster — 10s feeding frenzy.
+              frenzyUntil = now + FRENZY_MS;
+              setMonster(true);
+              playRoar();
             }
             growth = rabbitGrowth(eaten);
             state = nearestLanded() ? 'chase' : 'idle';

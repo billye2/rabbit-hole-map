@@ -37,7 +37,7 @@ test('a live-added site drops a carrot and the rabbit eats it', async ({ context
   await expect(map.locator('#burrow-layer .carrot')).toHaveCount(0, { timeout: 15000 });
 });
 
-test('the rabbit grows 25% after its 5th carrot', async ({ context, extensionId, site }) => {
+test('the 5th carrot triggers a monster feeding frenzy and +25% growth', async ({ context, extensionId, site }) => {
   test.setTimeout(120_000);
   const page = await context.newPage();
   await page.goto(site + '/');
@@ -50,7 +50,17 @@ test('the rabbit grows 25% after its 5th carrot', async ({ context, extensionId,
     await new Promise((r) => setTimeout(r, 700));
   }
 
-  // Wait for the feast to finish and the milestone to land.
+  // The milestone must unleash the monster form (fangs out) mid-feast.
+  let sawMonster = false;
+  for (let i = 0; i < 120 && !sawMonster; i++) {
+    sawMonster = await map.evaluate(
+      () => document.querySelector('#burrow-layer .rabbit .fangs')?.getAttribute('visibility') === 'visible'
+    );
+    if (!sawMonster) await new Promise((r) => setTimeout(r, 250));
+  }
+  expect(sawMonster).toBe(true);
+
+  // Feast done: grown 25%, ground cleared.
   await map.waitForFunction(
     () => {
       const g = document.querySelector('#burrow-layer .rabbit');
@@ -59,6 +69,12 @@ test('the rabbit grows 25% after its 5th carrot', async ({ context, extensionId,
       return scale >= 1.2 && document.querySelectorAll('#burrow-layer .carrot').length === 0;
     },
     { timeout: 90_000, polling: 500 }
+  );
+
+  // The frenzy wears off and the cute form returns (fangs hidden).
+  await map.waitForFunction(
+    () => document.querySelector('#burrow-layer .rabbit .fangs')?.getAttribute('visibility') === 'hidden',
+    { timeout: 15_000, polling: 500 }
   );
 });
 

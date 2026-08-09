@@ -56,6 +56,25 @@ export function playNibble(): void {
   osc.stop(t + 0.1);
 }
 
+// The monster-rabbit roar: a low sawtooth swell for the feeding frenzy.
+export function playRoar(): void {
+  const ac = ensureCtx();
+  if (!ac) return;
+  const t = ac.currentTime;
+  const osc = ac.createOscillator();
+  const gain = ac.createGain();
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(70, t);
+  osc.frequency.exponentialRampToValueAtTime(180, t + 0.18);
+  osc.frequency.exponentialRampToValueAtTime(55, t + 0.6);
+  gain.gain.setValueAtTime(0.0001, t);
+  gain.gain.exponentialRampToValueAtTime(0.09, t + 0.05);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.65);
+  osc.connect(gain).connect(ac.destination);
+  osc.start(t);
+  osc.stop(t + 0.7);
+}
+
 // A gentle descending "aww" — the hungry rabbit shrinking a notch.
 export function playShrink(): void {
   const ac = ensureCtx();

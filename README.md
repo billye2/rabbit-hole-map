@@ -31,8 +31,12 @@ Everything stays on your machine. Nothing is ever sent anywhere.
 - **A resident rabbit** roams the grass at the bottom of the map. Every site
   you visit live drops a carrot from its node; the rabbit startles (❗),
   chases it down, and nibbles it gone. It **grows +25%** at 5, 10, 20, 40,
-  and 60 carrots eaten (with a level-up pulse), and eats 1.5× faster once
-  it hits the first milestone. Keep browsing and watch it thrive.
+  and 60 carrots eaten, and eats 1.5× faster from the first milestone on.
+  Hitting a milestone unleashes a **10-second monster feeding frenzy** —
+  red eyes, fangs, dark aura, a roar — as it rampages at double speed until
+  every carrot on the ground is gone, then reverts to its cute (bigger)
+  self. Go 30 seconds without feeding it and hunger shrinks it 10% at a
+  time, back down to — but never below — its original size.
 - **Speech-bubble tooltips** on every control, with state-aware text.
 - **Export PNG** — share the constellation (pinned rings and all).
 - **Popup scoreboard** — pages visited, hops, deepest burrow, top haunt, and

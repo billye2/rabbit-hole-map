@@ -5,6 +5,15 @@ Versioning is odometer-style: minor/patch are single digits that carry over
 
 ## [Unreleased]
 
+- **Monster feeding frenzy** — hitting a growth milestone transforms the
+  rabbit for 10 seconds: glowing red eyes, fangs, a pulsing dark aura, and
+  a synth roar. In monster mode it skips the startled pause, hops at double
+  speed, and bites twice as fast until the ground is cleared, then reverts
+  to its cute (bigger) form.
+- **Hunger decay** — 30 seconds without a carrot shrinks the rabbit 10%,
+  looping down until it returns to (never below) its original size. Eating
+  resets the clock; the eating-speed achievement is kept.
+
 - **Roaming rabbit + carrot drops** — a code-drawn rabbit hops along a grass
   band at the bottom of the map (screen-space layer, unaffected by pan/zoom).
   Each live-added site drops a carrot from its node; the rabbit alerts (!),
