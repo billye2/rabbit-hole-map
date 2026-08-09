@@ -1,24 +1,30 @@
-import { test, expect, readSession, waitForNodes, openMap } from './fixtures.mjs';
+import { test, expect, readSession, waitForNodes, waitForTracked, openMap } from './fixtures.mjs';
 
 test('builds the graph from a click chain, including cross-tab hops', async ({ context, extensionId, site }) => {
+  // Probe first, so each navigation can be confirmed flushed before the
+  // next one fires (CI runners are slow enough to race otherwise).
+  const probe = await openMap(context, extensionId);
   const page = await context.newPage();
   await page.goto(site + '/');
+  await waitForTracked(probe, site + '/');
   await Promise.all([page.waitForNavigation(), page.click('#to-b')]);
+  await waitForTracked(probe, site + '/b');
   await Promise.all([page.waitForNavigation(), page.click('#to-c')]);
+  await waitForTracked(probe, site + '/c');
   await page.goto(site + '/');
   const popupPromise = context.waitForEvent('page');
   await page.click('#to-d');
   await popupPromise;
 
-  const probe = await openMap(context, extensionId);
   await waitForNodes(probe, 4);
   const session = await readSession(probe);
 
   expect(Object.keys(session.nodes)).toHaveLength(4);
+  const edgeDump = () => JSON.stringify(session.edges.map((e) => `${e.from}->${e.to}(${e.transition})`));
   const has = (from, to) => session.edges.some((e) => e.from === site + from && e.to === site + to);
-  expect(has('/', '/b')).toBe(true);
-  expect(has('/b', '/c')).toBe(true);
-  expect(has('/', '/d')).toBe(true); // via tab opener
+  expect(has('/', '/b'), edgeDump()).toBe(true);
+  expect(has('/b', '/c'), edgeDump()).toBe(true);
+  expect(has('/', '/d'), edgeDump()).toBe(true); // via tab opener
   expect(Object.values(session.nodes).some((n) => n.title === 'Page C')).toBe(true);
 });
 

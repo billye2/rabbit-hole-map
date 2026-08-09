@@ -88,6 +88,21 @@ export async function waitForNodes(page, n, timeout = 8000) {
   );
 }
 
+// Waits until the background has flushed this exact URL into the session.
+// Slow runners (CI) can otherwise fire the next navigation before the
+// previous one's tab-state write lands, silently dropping the edge.
+export async function waitForTracked(probePage, url, timeout = 8000) {
+  await probePage.waitForFunction(
+    async (u) => {
+      const st = await chrome.storage.local.get(null);
+      const s = st.currentSessionId ? st['session:' + st.currentSessionId] : null;
+      return !!(s && s.nodes[u]);
+    },
+    url,
+    { timeout }
+  );
+}
+
 export function dotCenter(map, label) {
   return map.evaluate((lbl) => {
     const t = [...document.querySelectorAll('#nodes .node')].find((n) =>

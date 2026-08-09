@@ -1,15 +1,20 @@
-import { test, expect, openMap, waitForNodes, dotCenter } from './fixtures.mjs';
+import { test, expect, openMap, waitForNodes, waitForTracked, dotCenter } from './fixtures.mjs';
 
-async function browseChain(context, site) {
+async function browseChain(context, extensionId, site) {
+  const probe = await openMap(context, extensionId);
   const page = await context.newPage();
   await page.goto(site + '/');
+  await waitForTracked(probe, site + '/');
   await Promise.all([page.waitForNavigation(), page.click('#to-b')]);
+  await waitForTracked(probe, site + '/b');
   await Promise.all([page.waitForNavigation(), page.click('#to-c')]);
+  await waitForTracked(probe, site + '/c');
+  await probe.close();
   return page;
 }
 
 test('renders the session as nodes and edges', async ({ context, extensionId, site }) => {
-  await browseChain(context, site);
+  await browseChain(context, extensionId, site);
   const map = await openMap(context, extensionId);
   await waitForNodes(map, 3);
   await map.reload();
@@ -18,7 +23,7 @@ test('renders the session as nodes and edges', async ({ context, extensionId, si
 });
 
 test('double-clicking a node reopens the page in a new tab', async ({ context, extensionId, site }) => {
-  await browseChain(context, site);
+  await browseChain(context, extensionId, site);
   const map = await openMap(context, extensionId);
   await map.bringToFront();
   await expect(map.locator('#nodes .node')).not.toHaveCount(0);
@@ -34,7 +39,7 @@ test('double-clicking a node reopens the page in a new tab', async ({ context, e
 });
 
 test('dragging pins a node where it was dropped; alt-click releases it', async ({ context, extensionId, site }) => {
-  await browseChain(context, site);
+  await browseChain(context, extensionId, site);
   const map = await openMap(context, extensionId);
   await map.bringToFront();
   await expect(map.locator('#nodes .node')).not.toHaveCount(0);
@@ -61,7 +66,7 @@ test('dragging pins a node where it was dropped; alt-click releases it', async (
 });
 
 test('hovering a HUD button shows its speech-bubble tooltip', async ({ context, extensionId, site }) => {
-  await browseChain(context, site);
+  await browseChain(context, extensionId, site);
   const map = await openMap(context, extensionId);
   await map.bringToFront();
   await map.hover('#export');
