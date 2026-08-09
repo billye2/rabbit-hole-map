@@ -10,6 +10,9 @@ Versioning is odometer-style: minor/patch are single digits that carry over
   a synth roar. In monster mode it skips the startled pause, hops at double
   speed, and bites twice as fast until the ground is cleared, then reverts
   to its cute (bigger) form.
+- Fix: drifting clouds no longer flash/reset at the end of each 80s
+  animation cycle — layers now tile at exactly 100vw and drift by whole
+  tile multiples, so the loop's last frame is identical to its first.
 - **Hunger decay** — 30 seconds without a carrot shrinks the rabbit 10%,
   looping down until it returns to (never below) its original size. Eating
   resets the clock; the eating-speed achievement is kept.

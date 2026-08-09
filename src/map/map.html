@@ -29,11 +29,17 @@
       radial-gradient(70px 30px at 74% 66%, rgba(255,255,255,.75) 60%, transparent 61%),
       radial-gradient(110px 40px at 82% 70%, rgba(255,255,255,.75) 60%, transparent 61%),
       radial-gradient(50px 24px at 55% 14%, rgba(255,255,255,.8) 60%, transparent 61%);
+    /* Explicit tile size so the drift loop can be seamless: each layer
+       shifts by an exact multiple of one tile per cycle, making the last
+       frame pixel-identical to the first (no reset flash). */
+    background-size: 100vw 100vh;
     animation: drift 80s linear infinite;
   }
   @keyframes drift {
     from { background-position: 0 0, 0 0, 0 0, 0 0, 0 0; }
-    to { background-position: 900px 0, 900px 0, -900px 0, -900px 0, 900px 0; }
+    /* Layers 1+2 and 3+4 form single clouds — keep each pair in lockstep.
+       The solo top cloud (layer 5) drifts at double speed for parallax. */
+    to { background-position: 100vw 0, 100vw 0, -100vw 0, -100vw 0, 200vw 0; }
   }
   header {
     position: fixed; top: 12px; left: 12px; right: 12px; z-index: 10;
