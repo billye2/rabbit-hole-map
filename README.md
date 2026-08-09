@@ -50,6 +50,17 @@ npm run icons     # regenerates icons/ (no image deps — hand-rolled PNG encode
 3. **Load unpacked** → select this project folder
 4. Browse a few links, then click the toolbar icon → **Open the map**
 
+## Release
+
+```sh
+npm run bump      # odometer version bump (1.1.9 -> 1.2.0); add X.Y.Z to jump
+npm run release   # build + zip runtime files -> release/rabbit-hole-map-<v>.zip
+npm run assets    # regenerate marketing/store/ from the live extension
+```
+
+Store listing copy lives in `docs/STORE_LISTING.md`; privacy docs in
+`rabbit-hole-map-PRIVACY.md` and `docs/privacy-practices-copy.md`.
+
 ## Test
 
 ```sh
