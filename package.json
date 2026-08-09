@@ -1,12 +1,13 @@
 {
   "name": "rabbit-hole-map",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "type": "module",
   "scripts": {
     "build": "node build.mjs",
     "icons": "node gen-icons.mjs",
-    "test": "npm run build && node --test tests/model.test.mjs",
+    "test": "npm run build && node --test tests/model.test.mjs tests/version.test.mjs",
+    "bump": "node scripts/bump.mjs",
     "e2e": "npm run build && node e2e/test-e2e.mjs"
   },
   "devDependencies": {

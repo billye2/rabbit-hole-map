@@ -60,6 +60,15 @@ simulation and live-updates via `chrome.storage.onChanged`.
 - **Node test runner**: `node --test tests/` fails on this setup; pass the
   file explicitly (`node --test tests/model.test.mjs`).
 
+## Versioning
+
+Odometer-style, per the user's spec: each of minor/patch is a single digit
+0-9 and carries over — 1.1.9 → 1.2.0, 1.9.9 → 2.0.0 (major may grow past 9).
+Never hand-edit versions: run `npm run bump` (`scripts/bump.mjs`), which
+validates the scheme and keeps `package.json` and `manifest.json` in sync.
+`npm run bump -- --dry` previews. Logic is unit-tested in
+`tests/version.test.mjs`.
+
 ## Testing philosophy
 
 Every user-facing behavior added so far got an e2e assertion in
