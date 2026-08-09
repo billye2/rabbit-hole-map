@@ -6,6 +6,7 @@ import {
   createSession,
   longestChain,
   needsNewSession,
+  hungerShrink,
   normalizeUrl,
   rabbitGrowth,
   shouldTrack,
@@ -120,6 +121,20 @@ test('rabbitGrowth: +25% compounding at 5/10/20/40/60, 1.5x eating speed after 5
   assert.equal(rabbitGrowth(40).scale, 1.25 ** 4);
   assert.equal(rabbitGrowth(60).scale, 1.25 ** 5);
   assert.equal(rabbitGrowth(500).scale, 1.25 ** 5); // capped — no milestone past 60
+});
+
+test('hungerShrink: -10% per tick, converges to exactly 1 and stays there', () => {
+  assert.equal(hungerShrink(1.25), 1.125);
+  // Starve a stage-2 rabbit: it must walk back down and stop at 1.
+  let s = 1.25 ** 2;
+  const seen = [];
+  for (let i = 0; i < 10; i++) {
+    s = hungerShrink(s);
+    seen.push(s);
+  }
+  assert.equal(s, 1);
+  assert.ok(seen.every((v) => v >= 1), 'never shrinks below the original size');
+  assert.equal(hungerShrink(1), 1); // fully starved rabbit stays original size
 });
 
 test('topDomain weighs by visits', () => {

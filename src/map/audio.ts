@@ -56,6 +56,24 @@ export function playNibble(): void {
   osc.stop(t + 0.1);
 }
 
+// A gentle descending "aww" — the hungry rabbit shrinking a notch.
+export function playShrink(): void {
+  const ac = ensureCtx();
+  if (!ac) return;
+  const t = ac.currentTime;
+  const osc = ac.createOscillator();
+  const gain = ac.createGain();
+  osc.type = 'triangle';
+  osc.frequency.setValueAtTime(280, t);
+  osc.frequency.exponentialRampToValueAtTime(150, t + 0.25);
+  gain.gain.setValueAtTime(0.0001, t);
+  gain.gain.exponentialRampToValueAtTime(0.04, t + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
+  osc.connect(gain).connect(ac.destination);
+  osc.start(t);
+  osc.stop(t + 0.32);
+}
+
 // Classic coin shape: a short tone that jumps up a fourth and rings out.
 function coinBlip(ac: AudioContext, freq: number): void {
   const t = ac.currentTime;

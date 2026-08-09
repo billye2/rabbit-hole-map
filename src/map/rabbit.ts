@@ -3,8 +3,8 @@
 // sibling of #viewport), so panning/zooming the graph never moves the
 // ground. Everything uses attribute fills — no CSS — so the PNG export's
 // SVG-clone path renders it as-is.
-import { rabbitGrowth } from '../model.js';
-import { playNibble, playPop } from './audio.js';
+import { HUNGER_INTERVAL_MS, hungerShrink, rabbitGrowth, rabbitStages } from '../model.js';
+import { playNibble, playPop, playShrink } from './audio.js';
 
 const SVGNS = 'http://www.w3.org/2000/svg';
 const NAVY = '#2b2857';
@@ -120,8 +120,12 @@ export function initRabbit(svg: SVGSVGElement): RabbitLayer {
   let lastBite = 0;
   let lastNow = 0;
   let eaten = 0;
-  let growth = rabbitGrowth(0);
+  let growth = rabbitGrowth(0); // supplies bite speed (a kept achievement)
+  let stages = 0;
+  let sizeScale = 1; // current displayed size: milestones grow it, hunger shrinks it
+  let nextHungerAt = -1;
   let growPulseAt = -Infinity;
+  let shrinkPulseAt = -Infinity;
 
   function layoutGround(): void {
     ground.setAttribute('x', '-20');
@@ -178,6 +182,18 @@ export function initRabbit(svg: SVGSVGElement): RabbitLayer {
     lastNow = now;
     const gy = groundY();
 
+    // --- hunger clock: every 30s without a meal, shrink 10% back toward
+    // the original size (never below it) ---
+    if (nextHungerAt < 0) nextHungerAt = now + HUNGER_INTERVAL_MS;
+    if (now >= nextHungerAt) {
+      nextHungerAt = now + HUNGER_INTERVAL_MS;
+      if (sizeScale > 1) {
+        sizeScale = hungerShrink(sizeScale);
+        shrinkPulseAt = now;
+        playShrink();
+      }
+    }
+
     // --- carrot physics ---
     for (const c of [...carrots]) {
       if (!c.landed) {
@@ -231,7 +247,7 @@ export function initRabbit(svg: SVGSVGElement): RabbitLayer {
         if (!midHop) {
           // Arrival is a tolerance band, not an exact point — the target
           // must never depend on which way the rabbit currently faces.
-          const tol = chase ? Math.max(16, 14 * growth.scale) : 10;
+          const tol = chase ? Math.max(16, 14 * sizeScale) : 10;
           if (Math.abs(target - x) < tol) {
             if (chase && chasing) {
               state = 'eat';
@@ -275,12 +291,15 @@ export function initRabbit(svg: SVGSVGElement): RabbitLayer {
           if (eating.bites >= BITES) {
             removeCarrot(eating);
             eaten++;
-            const next = rabbitGrowth(eaten);
-            if (next.scale > growth.scale) {
-              growPulseAt = now; // level up! overshoot pulse + fanfare
+            nextHungerAt = now + HUNGER_INTERVAL_MS; // fed — hunger clock resets
+            const ns = rabbitStages(eaten);
+            if (ns > stages) {
+              sizeScale *= Math.pow(1.25, ns - stages); // level up!
+              stages = ns;
+              growPulseAt = now;
               playPop();
             }
-            growth = next;
+            growth = rabbitGrowth(eaten);
             state = nearestLanded() ? 'chase' : 'idle';
             stateUntil = now + 1000;
           }
@@ -288,9 +307,12 @@ export function initRabbit(svg: SVGSVGElement): RabbitLayer {
       }
     }
 
-    const sincePulse = now - growPulseAt;
-    const pulse = sincePulse < GROW_PULSE_MS ? 1 + 0.18 * Math.sin((sincePulse / GROW_PULSE_MS) * Math.PI) : 1;
-    const size = growth.scale * pulse;
+    const sinceGrow = now - growPulseAt;
+    const sinceShrink = now - shrinkPulseAt;
+    let pulse = 1;
+    if (sinceGrow < GROW_PULSE_MS) pulse = 1 + 0.18 * Math.sin((sinceGrow / GROW_PULSE_MS) * Math.PI);
+    else if (sinceShrink < GROW_PULSE_MS) pulse = 1 - 0.12 * Math.sin((sinceShrink / GROW_PULSE_MS) * Math.PI);
+    const size = sizeScale * pulse;
     rabbitEl.setAttribute('transform', `translate(${x},${gy - hopOffset}) scale(${dir * size},${size})`);
     squash.setAttribute('transform', `scale(1,${squashY})`);
   }
