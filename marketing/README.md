@@ -8,12 +8,12 @@ npm run assets          # rebuild every asset (needs Chrome for Testing, see bel
 
 ## What's in `store/`
 
-| File | Size | Where it goes |
-| --- | --- | --- |
-| `store-icon-128.png` | 128×128 | Store listing icon (copy of the shipped icon) |
-| `screenshot-1.png` … `-5.png` | 1280×800 | Screenshots — order below |
-| `promo-tile-440x280.png` | 440×280 | Small promo tile |
-| `marquee-1400x560.png` | 1400×560 | Marquee promo tile |
+| File                          | Size     | Where it goes                                 |
+| ----------------------------- | -------- | --------------------------------------------- |
+| `store-icon-128.png`          | 128×128  | Store listing icon (copy of the shipped icon) |
+| `screenshot-1.png` … `-5.png` | 1280×800 | Screenshots — order below                     |
+| `promo-tile-440x280.png`      | 440×280  | Small promo tile                              |
+| `marquee-1400x560.png`        | 1400×560 | Marquee promo tile                            |
 
 Screenshot order is the pitch:
 
@@ -40,5 +40,11 @@ Chrome for Testing is required because branded Chrome ≥ 137 removed
 `--load-extension`. Default path: `.cache/cft/...` (see HANDOFF.md); override
 with `CHROME_PATH`.
 
-No promo video yet. If one gets made: 1280×800 screen recording of a replay
-run, upload to YouTube, paste the URL in the store listing.
+The promo video (`store/promo-video.webm`, ~40s, 1280×800 VP8) is recorded by
+`video.mjs` (`npm run assets:video`) — a single-take Playwright recording of
+the real extension with an injected cursor and caption pills, no
+post-production: hero constellation → real ▶ Replay run → untangle → drag to
+gold pins → rabbit title card. It uses Playwright's bundled Chromium (not
+CfT) and the same seeded session as the screenshots (`session.mjs`, shared).
+The store wants a YouTube URL: upload the webm and paste the link in
+`docs/STORE_LISTING.md`.

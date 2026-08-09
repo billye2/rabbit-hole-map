@@ -14,6 +14,7 @@ import { copyFileSync, mkdirSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { makeSession, seedSession } from './session.mjs';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const STORE = join(ROOT, 'marketing', 'store');
@@ -31,50 +32,8 @@ async function shoot(page, name, w, h) {
   console.log('✓', name);
 }
 
-// ---------- a believable rabbit hole: carbonara -> trebuchets ----------
-function makeSession() {
-  const nodes = {};
-  const edges = [];
-  let time = Date.now() - 105 * 60e3; // ~1h45m of glorious wasting
-  const visit = (url, title, from, extraVisits = 0) => {
-    time += 5 * 60e3 + Math.floor(Math.random() * 4 * 60e3);
-    if (!nodes[url]) {
-      nodes[url] = {
-        id: url,
-        url,
-        title,
-        domain: new URL(url).hostname.replace(/^www\./, ''),
-        firstVisit: time,
-        lastVisit: time,
-        visits: 1 + extraVisits,
-      };
-    } else {
-      nodes[url].visits++;
-    }
-    nodes[url].lastVisit = time;
-    if (from) edges.push({ from, to: url, time, transition: 'link' });
-    return url;
-  };
-
-  const g = visit('https://www.google.com/search?q=easy+carbonara', 'easy carbonara — Search', null);
-  const se = visit('https://www.seriouseats.com/pasta-carbonara', 'The Best Carbonara — Serious Eats', g);
-  visit('https://www.youtube.com/watch?v=carbonara', 'Carbonara in 4 Minutes — YouTube', se);
-  const wCarb = visit('https://en.wikipedia.org/wiki/Carbonara', 'Carbonara — Wikipedia', se);
-  const wGua = visit('https://en.wikipedia.org/wiki/Guanciale', 'Guanciale — Wikipedia', wCarb);
-  const wRome = visit('https://en.wikipedia.org/wiki/Rome', 'Rome — Wikipedia', wGua, 2);
-  visit('https://en.wikipedia.org/wiki/Colosseum', 'Colosseum — Wikipedia', wRome);
-  const wEmp = visit('https://en.wikipedia.org/wiki/Roman_Empire', 'Roman Empire — Wikipedia', wRome);
-  const wByz = visit('https://en.wikipedia.org/wiki/Byzantine_Empire', 'Byzantine Empire — Wikipedia', wEmp);
-  const wSiege = visit('https://en.wikipedia.org/wiki/Siege_engine', 'Siege engine — Wikipedia', wByz);
-  const wTreb = visit('https://en.wikipedia.org/wiki/Trebuchet', 'Trebuchet — Wikipedia', wSiege, 1);
-  const rd = visit('https://www.reddit.com/r/trebuchetmemes/', 'r/trebuchetmemes — Reddit', wTreb);
-  visit('https://www.youtube.com/watch?v=trebuchet', 'We Built a TREBUCHET — YouTube', rd);
-
-  const start = Object.values(nodes).reduce((m, n) => Math.min(m, n.firstVisit), Infinity);
-  return { id: String(start), start, end: time, nodes, edges };
-}
-
 // ---------- drive the real extension ----------
+// (The demo session itself lives in session.mjs, shared with video.mjs.)
 const browser = await puppeteer.launch({
   executablePath: CHROME,
   headless: false,
@@ -90,31 +49,16 @@ const browser = await puppeteer.launch({
 });
 
 try {
-  const sw = await browser.waitForTarget(
-    (t) => t.type() === 'service_worker' && t.url().includes('background.js'),
-    { timeout: 15000 }
-  );
+  const sw = await browser.waitForTarget((t) => t.type() === 'service_worker' && t.url().includes('background.js'), {
+    timeout: 15000,
+  });
   const extId = new URL(sw.url()).host;
 
   const map = await browser.newPage();
   await map.goto(`chrome-extension://${extId}/src/map/map.html`, { waitUntil: 'load' });
 
   // Seed the session and reload so the map opens on it.
-  const session = makeSession();
-  await map.evaluate(
-    (s) =>
-      new Promise((res) =>
-        chrome.storage.local.set(
-          {
-            ['session:' + s.id]: s,
-            currentSessionId: s.id,
-            sessionIndex: [{ id: s.id, start: s.start, end: s.end, pages: Object.keys(s.nodes).length }],
-          },
-          res
-        )
-      ),
-    session
-  );
+  await seedSession(map, makeSession());
   await map.reload({ waitUntil: 'load' });
   await map.waitForSelector('#nodes .node');
   await sleep(4000); // let the layout settle
@@ -151,7 +95,7 @@ try {
   const grab = async (label, tx, ty) => {
     const p = await map.evaluate((lbl) => {
       const t = [...document.querySelectorAll('#nodes .node')].find((n) =>
-        n.querySelector('text')?.textContent?.includes(lbl)
+        n.querySelector('text')?.textContent?.includes(lbl),
       );
       if (!t) return null;
       const cs = t.querySelectorAll('circle');
