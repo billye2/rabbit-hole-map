@@ -11,6 +11,15 @@ Versioning is odometer-style: minor/patch are single digits that carry over
   chases the nearest landed carrot, and eats it in three nibbles (soft
   triangle-blip sound, respects mute). Same `soundArmed` guard as the coin
   blips, so opening an old session doesn't rain carrots — but replay does.
+- **Rabbit growth** — +25% size (compounding, with a level-up pulse and coin
+  chime) at 5/10/20/40/60 carrots eaten; eating speed rises 1.5× at the
+  first milestone. Progression math in `model.ts#rabbitGrowth`, unit-tested.
+- Fix: chasing no longer dithers between closely-spaced carrots (the rabbit
+  locks one target and arrival uses a distance tolerance, not a
+  facing-dependent point).
+- Fix: a map opened on the empty state now picks up a brand-new session
+  live (the background writes `currentSessionId` before the session data;
+  the map now re-checks on any session key change).
 
 ## [1.2.4] — 2026-08-08
 

@@ -30,7 +30,9 @@ Everything stays on your machine. Nothing is ever sent anywhere.
 - **Double-click a node** to reopen that page in a new tab.
 - **A resident rabbit** roams the grass at the bottom of the map. Every site
   you visit live drops a carrot from its node; the rabbit startles (❗),
-  chases it down, and nibbles it gone.
+  chases it down, and nibbles it gone. It **grows +25%** at 5, 10, 20, 40,
+  and 60 carrots eaten (with a level-up pulse), and eats 1.5× faster once
+  it hits the first milestone. Keep browsing and watch it thrive.
 - **Speech-bubble tooltips** on every control, with state-aware text.
 - **Export PNG** — share the constellation (pinned rings and all).
 - **Popup scoreboard** — pages visited, hops, deepest burrow, top haunt, and

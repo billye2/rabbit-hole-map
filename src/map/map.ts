@@ -572,7 +572,26 @@ async function showSession(id: string | null): Promise<void> {
 sessionSelect.addEventListener('change', () => showSession(sessionSelect.value));
 
 chrome.storage.onChanged.addListener((changes, area) => {
-  if (area !== 'local' || !session) return;
+  if (area !== 'local') return;
+  if (!session) {
+    // The map was opened on the empty state and a session just started —
+    // switch to it live instead of sitting on "PRESS START" forever. The
+    // background writes currentSessionId BEFORE the session data, so react
+    // to any session-related key and re-check until the data is loadable.
+    const touched = Object.keys(changes).some(
+      (k) => k === 'currentSessionId' || k === 'sessionIndex' || k.startsWith('session:')
+    );
+    if (touched) {
+      void (async () => {
+        if (session) return;
+        const id = await store.currentSessionId();
+        if (!id || !(await store.loadSession(id))) return; // data not written yet
+        await loadSessionList(id);
+        await showSession(id);
+      })();
+    }
+    return;
+  }
   const key = store.sessionKey(session.id);
   if (changes[key]) {
     session = changes[key].newValue as Session;

@@ -3,7 +3,8 @@
 // sibling of #viewport), so panning/zooming the graph never moves the
 // ground. Everything uses attribute fills — no CSS — so the PNG export's
 // SVG-clone path renders it as-is.
-import { playNibble } from './audio.js';
+import { rabbitGrowth } from '../model.js';
+import { playNibble, playPop } from './audio.js';
 
 const SVGNS = 'http://www.w3.org/2000/svg';
 const NAVY = '#2b2857';
@@ -19,8 +20,8 @@ const CHASE_HOP_MS = 300;
 const ROAM_HOP_LEN = 75;
 const CHASE_HOP_LEN = 95;
 const ALERT_MS = 650;
-const BITE_MS = 260;
 const BITES = 3;
+const GROW_PULSE_MS = 450;
 
 interface Carrot {
   el: SVGGElement;
@@ -115,8 +116,12 @@ export function initRabbit(svg: SVGSVGElement): RabbitLayer {
   let hopDur = ROAM_HOP_MS;
   let hopHeight = 22;
   let eating: Carrot | null = null;
+  let chasing: Carrot | null = null; // locked target — prevents dithering between close carrots
   let lastBite = 0;
   let lastNow = 0;
+  let eaten = 0;
+  let growth = rabbitGrowth(0);
+  let growPulseAt = -Infinity;
 
   function layoutGround(): void {
     ground.setAttribute('x', '-20');
@@ -144,6 +149,7 @@ export function initRabbit(svg: SVGSVGElement): RabbitLayer {
     if (i >= 0) carrots.splice(i, 1);
     c.el.remove();
     if (eating === c) eating = null;
+    if (chasing === c) chasing = null;
   }
 
   function onCarrotLanded(now: number): void {
@@ -210,27 +216,30 @@ export function initRabbit(svg: SVGSVGElement): RabbitLayer {
       const chase = state === 'chase';
       let target = roamTarget;
       if (chase) {
-        const c = nearestLanded();
-        if (!c) {
+        // Stay locked on one carrot until it's gone — re-picking "nearest"
+        // every hop makes the rabbit dither between two close carrots.
+        if (!chasing || !carrots.includes(chasing) || !chasing.landed) chasing = nearestLanded();
+        if (!chasing) {
           state = 'idle';
           stateUntil = now + 800;
           target = x;
         } else {
-          target = c.x - dir * 14; // stop just beside the carrot
+          target = chasing.x;
         }
       }
       if (state === 'roam' || state === 'chase') {
         if (!midHop) {
-          if (Math.abs(target - x) < 10) {
-            if (chase) {
-              const c = nearestLanded();
-              if (c) {
-                state = 'eat';
-                eating = c;
-                lastBite = now;
-                dir = c.x >= x ? 1 : -1;
-              }
-            } else {
+          // Arrival is a tolerance band, not an exact point — the target
+          // must never depend on which way the rabbit currently faces.
+          const tol = chase ? Math.max(16, 14 * growth.scale) : 10;
+          if (Math.abs(target - x) < tol) {
+            if (chase && chasing) {
+              state = 'eat';
+              eating = chasing;
+              chasing = null;
+              lastBite = now;
+              dir = eating.x >= x ? 1 : -1;
+            } else if (!chase) {
               state = 'idle';
               stateUntil = now + 1200 + Math.random() * 2600;
             }
@@ -256,7 +265,7 @@ export function initRabbit(svg: SVGSVGElement): RabbitLayer {
         stateUntil = now + 900;
       } else {
         squashY = 1 - Math.abs(Math.sin(now / 90)) * 0.06; // munching bob
-        if (now - lastBite >= BITE_MS) {
+        if (now - lastBite >= growth.biteMs) {
           lastBite = now;
           eating.bites++;
           playNibble();
@@ -265,6 +274,13 @@ export function initRabbit(svg: SVGSVGElement): RabbitLayer {
           eating.scaleEl.setAttribute('opacity', String(0.3 + 0.7 * s));
           if (eating.bites >= BITES) {
             removeCarrot(eating);
+            eaten++;
+            const next = rabbitGrowth(eaten);
+            if (next.scale > growth.scale) {
+              growPulseAt = now; // level up! overshoot pulse + fanfare
+              playPop();
+            }
+            growth = next;
             state = nearestLanded() ? 'chase' : 'idle';
             stateUntil = now + 1000;
           }
@@ -272,7 +288,10 @@ export function initRabbit(svg: SVGSVGElement): RabbitLayer {
       }
     }
 
-    rabbitEl.setAttribute('transform', `translate(${x},${gy - hopOffset}) scale(${dir},1)`);
+    const sincePulse = now - growPulseAt;
+    const pulse = sincePulse < GROW_PULSE_MS ? 1 + 0.18 * Math.sin((sincePulse / GROW_PULSE_MS) * Math.PI) : 1;
+    const size = growth.scale * pulse;
+    rabbitEl.setAttribute('transform', `translate(${x},${gy - hopOffset}) scale(${dir * size},${size})`);
     squash.setAttribute('transform', `scale(1,${squashY})`);
   }
 

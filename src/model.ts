@@ -181,6 +181,19 @@ export function tidyLayout(session: Session): Record<string, { col: number; row:
   return out;
 }
 
+// Rabbit progression: +25% size (compounding) at each milestone of carrots
+// eaten, and 1.5x eating speed once the first milestone is reached.
+export const RABBIT_MILESTONES = [5, 10, 20, 40, 60];
+export const BASE_BITE_MS = 260;
+
+export function rabbitGrowth(eaten: number): { scale: number; biteMs: number } {
+  const stages = RABBIT_MILESTONES.filter((m) => eaten >= m).length;
+  return {
+    scale: Math.pow(1.25, stages),
+    biteMs: stages > 0 ? BASE_BITE_MS / 1.5 : BASE_BITE_MS,
+  };
+}
+
 export function fmtDuration(ms: number): string {
   const m = Math.round(ms / 60000);
   if (m < 1) return 'under a minute';

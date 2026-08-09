@@ -200,9 +200,12 @@ try {
   const rabbitState = await map.evaluate(async () => {
     const g = document.querySelector('#burrow-layer .rabbit');
     if (!g) return { exists: false, moved: false };
-    const t1 = g.getAttribute('transform');
+    // Include the inner squash group: an idle rabbit only "breathes", which
+    // animates the inner transform, not the root one.
+    const snap = () => g.getAttribute('transform') + '|' + (g.querySelector('g')?.getAttribute('transform') ?? '');
+    const t1 = snap();
     await new Promise((r) => setTimeout(r, 1500));
-    return { exists: true, moved: g.getAttribute('transform') !== t1 };
+    return { exists: true, moved: snap() !== t1 };
   });
   assert(rabbitState.exists, 'rabbit exists on the ground layer');
   assert(rabbitState.moved, 'rabbit is animating (roaming/breathing)');
