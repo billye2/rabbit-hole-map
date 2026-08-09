@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Rabbit Hole Map",
-  "version": "1.2.4",
+  "version": "1.2.5",
   "description": "Watch your browsing trail bloom into a constellation. Replay the rabbit hole. All data stays on your machine.",
   "permissions": [
     "webNavigation",

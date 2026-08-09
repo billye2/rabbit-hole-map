@@ -5,12 +5,14 @@ State of the project as of 2026-08-08, for whoever picks it up next
 
 ## Status
 
-**v1.2.4, store-ready.** All tests green: 14 unit tests (`npm test`) and a
-12-assertion puppeteer e2e (`npm run e2e`). The complete Web Store submission
-package exists: `release/rabbit-hole-map-1.2.4.zip` (upload this one; older
-zips carry the old spiral icon / lack Untangle), listing copy in
-`docs/STORE_LISTING.md`, assets in `marketing/store/`, privacy docs in place.
-Not yet uploaded to the store. Git tags `v1.2.3`, `v1.2.4` mark releases.
+**v1.2.5, store-ready.** All tests green: 16 unit tests (`npm test`) and 16
+Playwright e2e tests (`npm run e2e`), both enforced by GitHub Actions CI on
+every push. The complete Web Store submission package exists:
+`release/rabbit-hole-map-1.2.5.zip` (upload this one; older zips predate the
+rabbit mascot / monster frenzy / hunger decay), listing copy in
+`docs/STORE_LISTING.md`, assets in `marketing/store/`, privacy docs in
+place. Not yet uploaded to the store. Git tags `v1.2.3`…`v1.2.5` mark
+releases.
 
 ## How it works, in one paragraph
 
@@ -54,6 +56,17 @@ simulation and live-updates via `chrome.storage.onChanged`.
 - **Icon**: a code-drawn white rabbit peeking from its hole
   (`gen-icons.mjs`, hand-rolled PNG encoder, no image deps). The store icon
   and promo tiles derive from it — regenerate assets after icon changes.
+- **The rabbit** (`src/map/rabbit.ts`): screen-space burrow layer with an
+  idle/roam/alert/chase/eat state machine ticked from the map's rAF loop.
+  Live-added sites drop carrots (same `soundArmed` guard as the blips).
+  Progression is pure and unit-tested in model.ts: `rabbitGrowth` (+25%
+  compounding at 5/10/20/40/60 eaten, 1.5x bites after the first
+  milestone), `hungerShrink` (-10% per 30s unfed, floors at 1.0). A
+  milestone triggers a 10s monster frenzy (fangs/red eyes/aura via
+  `setMonster`, 2x hops and bites, no alert pause). Chase locks ONE carrot
+  and arrives by distance tolerance — never a facing-dependent point
+  (regression: dithering between close carrots). Progress is per-page-load
+  by design.
 
 ## Known quirks / bugs already fixed once (don't regress)
 

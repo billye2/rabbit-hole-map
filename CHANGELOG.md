@@ -3,7 +3,7 @@
 Versioning is odometer-style: minor/patch are single digits that carry over
 (1.1.9 → 1.2.0). Bump with `npm run bump`.
 
-## [Unreleased]
+## [1.2.5] — 2026-08-09
 
 - **Monster feeding frenzy** — hitting a growth milestone transforms the
   rabbit for 10 seconds: glowing red eyes, fangs, a pulsing dark aura, and
