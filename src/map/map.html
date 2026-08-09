@@ -1,5 +1,5 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <title>Rabbit Hole Map</title>
@@ -300,11 +300,13 @@
   <body>
     <header>
       <h1>🐰 Rabbit <span class="hole">Hole</span> <span class="map">Map</span></h1>
-      <span class="tipwrap" data-tip="Choose which rabbit hole to revisit"><select id="session-select"></select></span>
+      <span class="tipwrap" data-tip="Choose which rabbit hole to revisit"
+        ><select id="session-select" aria-label="Choose which rabbit hole to revisit"></select
+      ></span>
       <div id="replay-bar">
         <button id="replay-play" data-tip="Replay your descent from the top">▶ Replay</button>
         <span class="tipwrap" data-tip="Scrub through the timeline"
-          ><input type="range" id="replay-range" min="0" max="0" value="0"
+          ><input type="range" id="replay-range" aria-label="Scrub through the timeline" min="0" max="0" value="0"
         /></span>
         <span id="replay-label">live</span>
       </div>
@@ -313,34 +315,36 @@
       <button id="export" class="primary" data-tip="Snapshot the constellation as a PNG">Export PNG</button>
       <span id="stats"></span>
     </header>
-    <div id="empty">
-      <div class="card">
-        <div class="big">🐇</div>
-        <div>
-          No trail yet — PRESS START!<br />Go click some links. The map draws itself,<br />and the hours melt away. That's
-          the game.
+    <main>
+      <div id="empty">
+        <div class="card">
+          <div class="big">🐇</div>
+          <div>
+            No trail yet — PRESS START!<br />Go click some links. The map draws itself,<br />and the hours melt away. That's
+            the game.
+          </div>
         </div>
       </div>
-    </div>
-    <svg id="canvas">
-      <defs>
-        <marker
-          id="arrow"
-          viewBox="0 0 10 10"
-          refX="9"
-          refY="5"
-          markerWidth="6"
-          markerHeight="6"
-          orient="auto-start-reverse"
-        >
-          <path d="M 0 1 L 9 5 L 0 9 z" fill="#ffffff"></path>
-        </marker>
-      </defs>
-      <g id="viewport">
-        <g id="edges"></g>
-        <g id="nodes"></g>
-      </g>
-    </svg>
+      <svg id="canvas">
+        <defs>
+          <marker
+            id="arrow"
+            viewBox="0 0 10 10"
+            refX="9"
+            refY="5"
+            markerWidth="6"
+            markerHeight="6"
+            orient="auto-start-reverse"
+          >
+            <path d="M 0 1 L 9 5 L 0 9 z" fill="#ffffff"></path>
+          </marker>
+        </defs>
+        <g id="viewport">
+          <g id="edges"></g>
+          <g id="nodes"></g>
+        </g>
+      </svg>
+    </main>
     <script src="../../dist/map.js"></script>
   </body>
 </html>

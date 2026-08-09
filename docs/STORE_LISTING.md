@@ -91,3 +91,14 @@ Promo video: `marketing/store/promo-video.webm` (~40s, regenerate with
   same arrangement as 10block. When editing `rabbit-hole-map-PRIVACY.md`
   here, update the pdfxtn copy in the same change.)
 - Copy the answers verbatim from `docs/privacy-practices-copy.md`.
+
+## Pre-submit checklist
+
+- [ ] `npm run release -- --dry-run` green (tsc, lint, unit tests)
+- [ ] `npm run e2e` green, including the a11y tier
+- [ ] `npx playwright test visual` green locally (darwin baselines)
+- [ ] `docs/manual-checklist.md` swept against the built extension
+- [ ] Zip version is NEW to the store (never re-upload a seen version)
+- [ ] Screenshots/tiles/video in `marketing/store/` regenerated if the UI changed
+- [ ] YouTube URL above is current
+- [ ] HANDOFF versions table updated after submitting (date + review outcome)

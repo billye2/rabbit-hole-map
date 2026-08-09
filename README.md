@@ -15,8 +15,9 @@ them:
 - **No data ever leaves the machine.** No telemetry, no sync, no accounts, no
   cloud anything. Local-only storage is the product's whole privacy story
   (and what the store listing promises).
-- **No runtime dependencies.** The force layout, PNG icon encoder, and sound
-  are hand-rolled on purpose; MV3 CSP forbids remote code anyway.
+- **No runtime dependencies.** The force layout and sound are hand-rolled on
+  purpose; MV3 CSP forbids remote code anyway. (Dev-time tooling like esbuild
+  and resvg is fine — nothing ships in the extension.)
 - **Incognito is never recorded.**
 
 ## Features
@@ -61,7 +62,7 @@ them:
 ```sh
 npm install
 npm run build     # bundles src/ -> dist/ with esbuild
-npm run icons     # regenerates icons/ (no image deps — hand-rolled PNG encoder)
+npm run icons     # rasterizes icons/icon.svg -> 16/32/48/128 PNGs (resvg)
 ```
 
 ## Install (unpacked)
@@ -90,9 +91,13 @@ Store listing copy lives in `docs/STORE_LISTING.md`; privacy docs in
 
 ```sh
 npm test          # unit tests for the pure graph model (node --test)
-npm run e2e       # Playwright suite: 16 tests against the real extension
+npm run e2e       # Playwright: 16 behavior + 3 axe a11y + 4 visual-regression
 npm run lint      # eslint + prettier --check (lint:fix to auto-fix)
 ```
+
+The visual tier's baselines are darwin-only, so it skips on CI — run it
+locally before a release (`npx playwright test visual`). Manual pre-submit
+QA lives in `docs/manual-checklist.md`.
 
 The e2e suite (`e2e/*.spec.mjs`, `@playwright/test`) loads the unpacked
 extension into Playwright's own Chromium — no manual browser wrangling —

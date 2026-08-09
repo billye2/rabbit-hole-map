@@ -25,6 +25,10 @@ export const test = base.extend({
   context: async ({}, use) => {
     const context = await chromium.launchPersistentContext('', {
       channel: 'chromium',
+      // Fixed locale/TZ so time-derived UI text (HUD, session picker) is
+      // deterministic — the visual-regression tier depends on it.
+      locale: 'en-US',
+      timezoneId: 'America/Los_Angeles',
       args: [`--disable-extensions-except=${EXTENSION_PATH}`, `--load-extension=${EXTENSION_PATH}`, '--no-first-run'],
     });
     await use(context);

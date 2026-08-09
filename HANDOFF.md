@@ -46,8 +46,9 @@ simulation and live-updates via `chrome.storage.onChanged`.
 - **All service-worker event handlers funnel through a promise queue**
   (`enqueue` in background.ts) because each does read-modify-write on shared
   storage keys and MV3 handlers interleave.
-- **No runtime dependencies at all.** Force layout, PNG icon encoder, and
-  sound effects are all hand-rolled. MV3 CSP forbids remote code anyway.
+- **No runtime dependencies at all.** Force layout and sound effects are
+  hand-rolled. MV3 CSP forbids remote code anyway. (Dev-time deps are fine —
+  nothing ships in the extension.)
 - **Sessions split on a 30-minute gap** (`SESSION_GAP_MS` in model.ts).
 - **Edges are only created for `link`/`form_submit`/`client_redirect`
   transitions** (plus opener attribution); typed URLs and omnibox searches
@@ -66,9 +67,11 @@ simulation and live-updates via `chrome.storage.onChanged`.
   onto that grid and zoom-fits. `userPinned` (gold rings) is tracked
   separately from sim-level `pinned` precisely because untangle pins
   everything — don't collapse the two.
-- **Icon**: a code-drawn white rabbit peeking from its hole
-  (`gen-icons.mjs`, hand-rolled PNG encoder, no image deps). The store icon
-  and promo tiles derive from it — regenerate assets after icon changes.
+- **Icon**: a white rabbit peeking from its hole. Source of truth is
+  `icons/icon.svg`; `npm run icons` rasterizes 16/32/48/128 PNGs via resvg
+  (`gen-icons.mjs` — it replaced a hand-rolled analytic PNG encoder with
+  identical geometry). The store icon and promo tiles derive from it —
+  regenerate assets after icon changes.
 - **The rabbit** (`src/map/rabbit.ts`): screen-space burrow layer with an
   idle/roam/alert/chase/eat state machine ticked from the map's rAF loop.
   Live-added sites drop carrots (same `soundArmed` guard as the blips).
@@ -138,7 +141,16 @@ Every user-facing behavior gets an e2e test. The suite is `@playwright/test`
 (10block's pattern): `e2e/fixtures.mjs` provides a persistent context with
 the extension loaded, the extension id, and a local test site; specs are
 split by area (tracking / map / untangle / rabbit / session / popup — 16
-tests, ~40s plus a 3-minute hunger-decay soak). Playwright's own Chromium still supports `--load-extension`,
+tests, ~40s plus a 3-minute hunger-decay soak). Two more tiers ride the same
+fixtures: `e2e/a11y.spec.mjs` (axe scans of all three pages; per-element,
+dated exceptions only — currently just the wordmark contrast) and
+`e2e/visual.spec.mjs` (4 screenshot assertions on deterministic surfaces —
+fixed-timestamp session from `e2e/visual-session.mjs`, pinned locale/TZ in
+the fixture context, `#burrow-layer` hidden because a mask would follow the
+roaming rabbit's bounding box and flake; `maxDiffPixels: 150`, verified to
+pass 3× stable and fail on a 3px layout shift). Visual baselines are
+darwin-only → the tier skips on CI; run it locally before a release.
+Manual pre-submit QA: `docs/manual-checklist.md`. Playwright's own Chromium still supports `--load-extension`,
 so no Chrome for Testing is needed for tests (only `npm run assets` still
 uses CfT + puppeteer for marketing captures). CI runs unit + e2e on every
 push (`.github/workflows/ci.yml`) and uploads traces on failure. The e2e
