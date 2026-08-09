@@ -3,6 +3,11 @@
 Versioning is odometer-style: minor/patch are single digits that carry over
 (1.1.9 → 1.2.0). Bump with `npm run bump`.
 
+Before cutting a release, write the `## [X.Y.Z] — YYYY-MM-DD` section for the
+*next* version first (preview the number with `npm run bump -- --dry`).
+`npm run release` refuses to run without it, and that section becomes the
+GitHub release notes verbatim via `npm run release:publish`.
+
 ## [1.2.5] — 2026-08-09
 
 - **Monster feeding frenzy** — hitting a growth milestone transforms the

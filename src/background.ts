@@ -6,6 +6,7 @@ import {
   shouldTrack,
   updateTitle,
   type NavEvent,
+  type Session,
 } from './model.js';
 import * as store from './storage.js';
 
@@ -36,12 +37,7 @@ async function setTabState(s: TabState): Promise<void> {
 
 const EDGE_TRANSITIONS = new Set(['link', 'form_submit', 'client_redirect']);
 
-async function recordNavigation(
-  tabId: number,
-  rawUrl: string,
-  transitionType: string,
-  time: number
-): Promise<void> {
+async function recordNavigation(tabId: number, rawUrl: string, transitionType: string, time: number): Promise<void> {
   const tab = await chrome.tabs.get(tabId).catch(() => null);
   if (!tab || tab.incognito) return;
 
@@ -64,10 +60,11 @@ async function recordNavigation(
   delete state.openers[key];
   await setTabState(state);
 
-  let session = null;
+  let session: Session | null = null;
   const curId = await store.currentSessionId();
   if (curId) session = await store.loadSession(curId);
-  if (needsNewSession(session, time)) {
+  // needsNewSession also covers null, but the explicit check narrows the type.
+  if (!session || needsNewSession(session, time)) {
     session = createSession(time);
     await store.setCurrentSessionId(session.id);
   }
@@ -79,8 +76,8 @@ async function recordNavigation(
     transition: transitionType,
     title: tab.title && tab.url && normalizeUrl(tab.url) === url ? tab.title : undefined,
   };
-  applyNavEvent(session!, ev);
-  await store.saveSession(session!);
+  applyNavEvent(session, ev);
+  await store.saveSession(session);
 }
 
 chrome.webNavigation.onCommitted.addListener((d) => {

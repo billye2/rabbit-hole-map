@@ -24,7 +24,9 @@ const rabbit = initRabbit(svg);
 let session: Session | null = null;
 let sim = new ForceSim(window.innerWidth, window.innerHeight);
 let nodeEls = new Map<string, SVGGElement>();
-let edgeEls: SVGLineElement[] = [];
+// Edge endpoint ids ride along on the line elements between ticks.
+type EdgeLine = SVGLineElement & { _from: string; _to: string };
+let edgeEls: EdgeLine[] = [];
 let settleTicks = 0;
 
 // Replay state: null = live view, otherwise index into the event timeline.
@@ -94,7 +96,7 @@ function fmtSessionLabel(m: SessionMeta): string {
 
 function visibleGraph(): { nodes: PageNode[]; edges: NavEdge[] } {
   if (!session) return { nodes: [], edges: [] };
-  const cutoff = replayCutoff == null ? Infinity : eventTimes[replayCutoff] ?? Infinity;
+  const cutoff = replayCutoff == null ? Infinity : (eventTimes[replayCutoff] ?? Infinity);
   const nodes = Object.values(session.nodes).filter((n) => n.firstVisit <= cutoff);
   const ids = new Set(nodes.map((n) => n.id));
   const edges = session.edges.filter((e) => e.time <= cutoff && ids.has(e.from) && ids.has(e.to));
@@ -116,7 +118,7 @@ function rebuild(): void {
   edgeEls = [];
   const lastEdgeTime = edges.length ? edges[edges.length - 1].time : -1;
   for (const e of edges) {
-    const line = document.createElementNS(SVGNS, 'line');
+    const line = document.createElementNS(SVGNS, 'line') as EdgeLine;
     line.setAttribute('class', 'edge' + (e.time === lastEdgeTime && replayCutoff != null ? ' fresh' : ''));
     line.setAttribute('marker-end', 'url(#arrow)');
     edgesG.appendChild(line);
@@ -187,8 +189,8 @@ function rebuild(): void {
   // Edge endpoints resolved per tick via sim node lookup.
   edgeEls.forEach((line, i) => {
     const e = edges[i];
-    (line as any)._from = e.from;
-    (line as any)._to = e.to;
+    line._from = e.from;
+    line._to = e.to;
     void byId;
   });
 
@@ -236,8 +238,8 @@ function renderPositions(): void {
     if (p) g.setAttribute('transform', `translate(${p.x},${p.y})`);
   }
   for (const line of edgeEls) {
-    const a = pos.get((line as any)._from);
-    const b = pos.get((line as any)._to);
+    const a = pos.get(line._from);
+    const b = pos.get(line._to);
     if (!a || !b) continue;
     // Shorten the line so the arrowhead lands on the circle's rim.
     const dx = b.x - a.x;
@@ -337,16 +339,20 @@ svg.addEventListener('pointerdown', (ev) => {
   window.addEventListener('pointerup', up);
 });
 
-svg.addEventListener('wheel', (ev) => {
-  ev.preventDefault();
-  const factor = ev.deltaY < 0 ? 1.1 : 1 / 1.1;
-  const k2 = Math.min(4, Math.max(0.2, view.k * factor));
-  // Zoom around the cursor.
-  view.x = ev.clientX - ((ev.clientX - view.x) / view.k) * k2;
-  view.y = ev.clientY - ((ev.clientY - view.y) / view.k) * k2;
-  view.k = k2;
-  applyView();
-}, { passive: false });
+svg.addEventListener(
+  'wheel',
+  (ev) => {
+    ev.preventDefault();
+    const factor = ev.deltaY < 0 ? 1.1 : 1 / 1.1;
+    const k2 = Math.min(4, Math.max(0.2, view.k * factor));
+    // Zoom around the cursor.
+    view.x = ev.clientX - ((ev.clientX - view.x) / view.k) * k2;
+    view.y = ev.clientY - ((ev.clientY - view.y) / view.k) * k2;
+    view.k = k2;
+    applyView();
+  },
+  { passive: false },
+);
 
 // ---------- replay ----------
 
@@ -355,10 +361,7 @@ function computeTimeline(): void {
     eventTimes = [];
     return;
   }
-  const times = [
-    ...Object.values(session.nodes).map((n) => n.firstVisit),
-    ...session.edges.map((e) => e.time),
-  ];
+  const times = [...Object.values(session.nodes).map((n) => n.firstVisit), ...session.edges.map((e) => e.time)];
   eventTimes = [...new Set(times)].sort((a, b) => a - b);
   replayRange.max = String(eventTimes.length);
   if (replayCutoff == null) replayRange.value = replayRange.max;
@@ -581,7 +584,7 @@ chrome.storage.onChanged.addListener((changes, area) => {
     // background writes currentSessionId BEFORE the session data, so react
     // to any session-related key and re-check until the data is loadable.
     const touched = Object.keys(changes).some(
-      (k) => k === 'currentSessionId' || k === 'sessionIndex' || k.startsWith('session:')
+      (k) => k === 'currentSessionId' || k === 'sessionIndex' || k.startsWith('session:'),
     );
     if (touched) {
       void (async () => {
@@ -600,7 +603,7 @@ chrome.storage.onChanged.addListener((changes, area) => {
     computeTimeline();
     if (replayCutoff == null) rebuild(); // don't yank the user out of a replay
   }
-  if (changes['sessionIndex']) loadSessionList(session.id);
+  if (changes['sessionIndex']) void loadSessionList(session.id);
 });
 
 async function init(): Promise<void> {
@@ -618,4 +621,4 @@ window.addEventListener('resize', () => {
   rabbit.resize();
 });
 
-init();
+void init();

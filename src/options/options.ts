@@ -11,7 +11,12 @@ async function init(): Promise<void> {
 document.getElementById('save')!.addEventListener('click', async () => {
   const blocklist = blocklistEl.value
     .split('\n')
-    .map((l) => l.trim().toLowerCase().replace(/^www\./, ''))
+    .map((l) =>
+      l
+        .trim()
+        .toLowerCase()
+        .replace(/^www\./, ''),
+    )
     .filter(Boolean);
   await store.saveSettings({ blocklist });
   blocklistEl.value = blocklist.join('\n');
@@ -25,4 +30,4 @@ document.getElementById('clear')!.addEventListener('click', async () => {
   alert('All data cleared.');
 });
 
-init();
+void init();

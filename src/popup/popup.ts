@@ -22,9 +22,9 @@ async function init(): Promise<void> {
   }
 
   document.getElementById('open')!.addEventListener('click', () => {
-    chrome.tabs.create({ url: chrome.runtime.getURL('src/map/map.html') });
+    void chrome.tabs.create({ url: chrome.runtime.getURL('src/map/map.html') });
     window.close();
   });
 }
 
-init();
+void init();
