@@ -18,10 +18,11 @@ npm run assets          # rebuild every asset (needs Chrome for Testing, see bel
 Screenshot order is the pitch:
 
 1. **The constellation** — a full carbonara→trebuchet session, live.
-2. **Replay** — mid-descent, scrubber at ~55%.
-3. **Arrange & pin** — two gold-pinned nodes plus a tooltip bubble.
-4. **The scoreboard** — popup with pages/hops/deepest burrow/time wasted.
-5. **PRESS START** — the empty state, as the call to action.
+2. **Untangle** — the same session one click later: every path in its own
+   lane, auto-zoomed to fit.
+3. **Replay** — mid-descent, scrubber at ~55%.
+4. **Arrange & pin** — two gold-pinned nodes plus a tooltip bubble.
+5. **The scoreboard** — popup with pages/hops/deepest burrow/time wasted.
 
 ## How it's built
 

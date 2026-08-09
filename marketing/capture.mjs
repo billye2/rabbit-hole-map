@@ -120,16 +120,26 @@ try {
   await sleep(4000); // let the layout settle
 
   // 1 — hero: the full constellation, live.
+  await map.mouse.move(640, 760); // park the cursor away from the HUD
   await shoot(map, 'screenshot-1.png', 1280, 800);
 
-  // 2 — replay, mid-descent.
+  // 2 — untangle: the same session, one click later, every path in its lane.
+  await map.click('#untangle');
+  await map.mouse.move(640, 760);
+  await sleep(1000);
+  await shoot(map, 'screenshot-2.png', 1280, 800);
+  await map.click('#untangle'); // back to physics
+  await map.mouse.move(640, 760);
+  await sleep(2500);
+
+  // 3 — replay, mid-descent.
   await map.evaluate(() => {
     const r = document.getElementById('replay-range');
     r.value = String(Math.floor(Number(r.max) * 0.55));
     r.dispatchEvent(new Event('input'));
   });
   await sleep(1200);
-  await shoot(map, 'screenshot-2.png', 1280, 800);
+  await shoot(map, 'screenshot-3.png', 1280, 800);
   await map.evaluate(() => {
     const r = document.getElementById('replay-range');
     r.value = r.max;
@@ -137,7 +147,7 @@ try {
   });
   await sleep(1500);
 
-  // 3 — arrange the burrow: drag two nodes out (gold pins) + a tooltip.
+  // 4 — arrange the burrow: drag two nodes out (gold pins) + a tooltip.
   const grab = async (label, tx, ty) => {
     const p = await map.evaluate((lbl) => {
       const t = [...document.querySelectorAll('#nodes .node')].find((n) =>
@@ -159,9 +169,9 @@ try {
   await sleep(2500);
   await map.hover('#export');
   await sleep(800);
-  await shoot(map, 'screenshot-3.png', 1280, 800);
+  await shoot(map, 'screenshot-4.png', 1280, 800);
 
-  // 4 — the popup scoreboard, staged large on the sky.
+  // 5 — the popup scoreboard, staged large on the sky.
   const popup = await browser.newPage();
   await popup.goto(`chrome-extension://${extId}/src/popup/popup.html`, { waitUntil: 'load' });
   await popup.addStyleTag({
@@ -172,14 +182,8 @@ try {
     `,
   });
   await sleep(500);
-  await shoot(popup, 'screenshot-4.png', 1280, 800);
+  await shoot(popup, 'screenshot-5.png', 1280, 800);
   await popup.close();
-
-  // 5 — the PRESS START empty state (destroys the seed, so it goes last).
-  await map.evaluate(() => new Promise((res) => chrome.storage.local.clear(res)));
-  await map.reload({ waitUntil: 'load' });
-  await sleep(1000);
-  await shoot(map, 'screenshot-5.png', 1280, 800);
 
   // Promo tiles from the stage page (sky + icon + wordmark, pure HTML/CSS).
   const stageUrl = pathToFileURL(join(ROOT, 'marketing/stage/promo.html')).href;

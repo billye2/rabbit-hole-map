@@ -76,8 +76,8 @@ Upload from `marketing/store/` (regenerate with `npm run assets`):
 | `promo-tile-440x280.png` | Small promo tile |
 | `marquee-1400x560.png` | Marquee promo tile |
 
-Screenshot order is the pitch: **the constellation → the replay → arrange &
-pin → the scoreboard → PRESS START**.
+Screenshot order is the pitch: **the constellation → untangled, one click
+later → the replay → arrange & pin → the scoreboard**.
 
 No promo video yet — if we make one, upload to YouTube and paste the URL here.
 

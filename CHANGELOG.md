@@ -3,6 +3,13 @@
 Versioning is odometer-style: minor/patch are single digits that carry over
 (1.1.9 → 1.2.0). Bump with `npm run bump`.
 
+## [1.2.4] — 2026-08-08
+
+- New icon: a white rabbit peeking out of its hole (replaces the spiral),
+  across toolbar, store icon, and promo tiles.
+- Store screenshots updated: Untangle is now shot 2 of the pitch; the empty
+  state shot was retired.
+
 ## [1.2.3] — 2026-08-08
 
 - **Untangle mode** — toggle button that lays the graph out as a tidy

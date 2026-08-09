@@ -43,12 +43,29 @@ function encodePNG(width, height, rgba) {
   ]);
 }
 
-const BG = [74, 163, 255]; // mario sky blue
-const ARM = [255, 214, 10]; // coin yellow
-const HOLE = [43, 40, 87]; // deep navy center
+// A white rabbit peeking out of its hole, on the sky-blue badge.
+const SKY = [74, 163, 255]; // mario sky blue
+const NAVY = [43, 40, 87]; // the hole, eyes
+const WHITE = [255, 255, 255]; // the rabbit
+const PINK = [255, 158, 181]; // inner ears, nose
 
-function lerp(a, b, t) {
-  return a + (b - a) * t;
+// Shape tests in unit coordinates (0..1 across the icon).
+const inCircle = (x, y, cx, cy, r) => (x - cx) ** 2 + (y - cy) ** 2 <= r * r;
+const inEllipse = (x, y, cx, cy, rx, ry) => ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1;
+const inVCapsule = (x, y, cx, y0, y1, halfW) => {
+  const yy = Math.max(y0, Math.min(y1, y));
+  return (x - cx) ** 2 + (y - yy) ** 2 <= halfW * halfW;
+};
+
+function rabbitColor(ux, uy) {
+  // Topmost shape wins.
+  if (inCircle(ux, uy, 0.435, 0.555, 0.024) || inCircle(ux, uy, 0.565, 0.555, 0.024)) return NAVY; // eyes
+  if (inCircle(ux, uy, 0.5, 0.615, 0.021)) return PINK; // nose
+  if (inCircle(ux, uy, 0.5, 0.58, 0.215)) return WHITE; // head
+  if (inVCapsule(ux, uy, 0.395, 0.2, 0.38, 0.027) || inVCapsule(ux, uy, 0.605, 0.2, 0.38, 0.027)) return PINK; // inner ears
+  if (inVCapsule(ux, uy, 0.395, 0.16, 0.42, 0.063) || inVCapsule(ux, uy, 0.605, 0.16, 0.42, 0.063)) return WHITE; // ears
+  if (inEllipse(ux, uy, 0.5, 0.8, 0.36, 0.11)) return NAVY; // the rabbit hole
+  return SKY;
 }
 
 function drawIcon(size) {
@@ -60,25 +77,10 @@ function drawIcon(size) {
       let rSum = 0, gSum = 0, bSum = 0, aSum = 0;
       for (let sy = 0; sy < SS; sy++) {
         for (let sx = 0; sx < SS; sx++) {
-          const px = x + (sx + 0.5) / SS - R;
-          const py = y + (sy + 0.5) / SS - R;
-          const r = Math.hypot(px, py);
-          if (r > R - 0.5) continue; // outside the disc: transparent
-          const theta = Math.atan2(py, px);
-          const frac = r / R;
-          let col;
-          if (frac < 0.16) {
-            col = HOLE;
-          } else {
-            const spiral = (frac * 3 - theta / (2 * Math.PI)) % 1;
-            const onArm = (spiral + 1) % 1 < 0.42;
-            if (onArm) {
-              const fade = 0.45 + 0.55 * frac; // arms brighten outward
-              col = [lerp(HOLE[0], ARM[0], fade), lerp(HOLE[1], ARM[1], fade), lerp(HOLE[2], ARM[2], fade)];
-            } else {
-              col = BG;
-            }
-          }
+          const px = x + (sx + 0.5) / SS;
+          const py = y + (sy + 0.5) / SS;
+          if (Math.hypot(px - R, py - R) > R - 0.5) continue; // outside the disc: transparent
+          const col = rabbitColor(px / size, py / size);
           rSum += col[0];
           gSum += col[1];
           bSum += col[2];
