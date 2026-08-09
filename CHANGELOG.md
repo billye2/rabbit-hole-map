@@ -3,6 +3,14 @@
 Versioning is odometer-style: minor/patch are single digits that carry over
 (1.1.9 → 1.2.0). Bump with `npm run bump`.
 
+## [Unreleased]
+
+- **Untangle mode** — toggle button that lays the graph out as a tidy
+  left-to-right tree (each trail in its own lane, parents centered over
+  branches, auto zoom-to-fit) instead of the force-directed tangle. Layout
+  logic lives in `model.ts#tidyLayout`, unit-tested; toggling back re-warms
+  the physics. User-pinned nodes keep their gold rings in both modes.
+
 ## [1.2.2] — 2026-08-08
 
 First store-ready release.

@@ -1,4 +1,4 @@
-import { fmtDuration, type NavEdge, type PageNode, type Session, type SessionMeta } from '../model.js';
+import { fmtDuration, tidyLayout, type NavEdge, type PageNode, type Session, type SessionMeta } from '../model.js';
 import * as store from '../storage.js';
 import { ForceSim, hashSeed } from './force.js';
 import { isMuted, playPop, setMuted } from './audio.js';
@@ -34,6 +34,13 @@ let seenNodeIds = new Set<string>();
 // Sound stays disarmed while a session first renders, so opening the map
 // doesn't machine-gun a blip per existing node.
 let soundArmed = false;
+
+// Nodes the USER pinned by dragging (gold ring). Distinct from sim-level
+// pinning, which untangle mode also uses to freeze the tidy layout.
+const userPinned = new Set<string>();
+
+// Untangle mode: tidy tree layout instead of the force-directed tangle.
+let untangled = false;
 
 // Pan/zoom state applied to #viewport.
 let view = { x: 0, y: 0, k: 1 };
@@ -117,10 +124,9 @@ function rebuild(): void {
   nodeEls = new Map();
   const newCount = nodes.reduce((c, n) => c + (seenNodeIds.has(n.id) ? 0 : 1), 0);
   const byId = new Map(nodes.map((n) => [n.id, n]));
-  const pinnedIds = new Set(sim.nodes.filter((sn) => sn.pinned).map((sn) => sn.id));
   for (const n of nodes) {
     const g = document.createElementNS(SVGNS, 'g');
-    g.setAttribute('class', 'node' + (pinnedIds.has(n.id) ? ' pinned' : ''));
+    g.setAttribute('class', 'node' + (userPinned.has(n.id) ? ' pinned' : ''));
     const r = nodeRadius(n);
 
     // Inner group carries the bounce-in animation so it doesn't fight the
@@ -189,10 +195,14 @@ function rebuild(): void {
 
   updateStats(nodes, edges);
   settleTicks = 0;
-  sim.reheat();
-  // Position the fresh elements immediately: the rAF loop is paused while
-  // the tab is hidden, and unpositioned nodes would all sit at (0,0).
-  renderPositions();
+  if (untangled) {
+    applyUntangle(); // keep the tidy layout, including any just-added nodes
+  } else {
+    sim.reheat();
+    // Position the fresh elements immediately: the rAF loop is paused while
+    // the tab is hidden, and unpositioned nodes would all sit at (0,0).
+    renderPositions();
+  }
 }
 
 function updateStats(nodes: PageNode[], edges: NavEdge[]): void {
@@ -252,9 +262,10 @@ function attachDrag(g: SVGGElement, id: string): void {
     const node = sim.nodes.find((n) => n.id === id);
     if (!node) return;
 
-    // Alt-click releases a pinned node back to the physics.
-    if (ev.altKey && node.pinned) {
-      node.pinned = false;
+    // Alt-click releases a user-pinned node back to the physics.
+    if (ev.altKey && userPinned.has(id)) {
+      userPinned.delete(id);
+      if (!untangled) node.pinned = false;
       g.classList.remove('pinned');
       settleTicks = 0;
       return;
@@ -277,8 +288,9 @@ function attachDrag(g: SVGGElement, id: string): void {
       // A real drag pins the node where the user left it — no scrunching
       // back. A plain click (no movement) keeps whatever state it had.
       if (moved) {
+        userPinned.add(id);
         g.classList.add('pinned');
-      } else if (!wasPinned) {
+      } else if (!wasPinned && !untangled) {
         node.pinned = false;
       }
       settleTicks = 0;
@@ -430,6 +442,69 @@ exportBtn.addEventListener('click', async () => {
   a.click();
 });
 
+// ---------- untangle mode ----------
+
+const untangleBtn = document.getElementById('untangle') as HTMLButtonElement;
+const COL_W = 190;
+const ROW_H = 74;
+
+function applyUntangle(): void {
+  if (!session) return;
+  const grid = tidyLayout(session);
+  for (const sn of sim.nodes) {
+    const p = grid[sn.id];
+    if (!p) continue;
+    sn.x = 120 + p.col * COL_W;
+    sn.y = 160 + p.row * ROW_H;
+    sn.vx = 0;
+    sn.vy = 0;
+    sn.pinned = true; // freeze the tidy layout against the physics
+  }
+  fitView();
+  renderPositions();
+}
+
+// Pan/zoom so the whole layout is visible (never zooms in past 1:1).
+function fitView(): void {
+  if (!sim.nodes.length) return;
+  const xs = sim.nodes.map((n) => n.x);
+  const ys = sim.nodes.map((n) => n.y);
+  const minX = Math.min(...xs) - 90;
+  const maxX = Math.max(...xs) + 170; // room for labels on the right
+  const minY = Math.min(...ys) - 70;
+  const maxY = Math.max(...ys) + 70;
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  const top = 90; // HUD
+  const k = Math.min(1, w / (maxX - minX), (h - top) / (maxY - minY));
+  view.k = k;
+  view.x = (w - (maxX - minX) * k) / 2 - minX * k;
+  view.y = top + (h - top - (maxY - minY) * k) / 2 - minY * k;
+  applyView();
+}
+
+function renderUntangle(): void {
+  untangleBtn.textContent = untangled ? '🌀 Physics' : '🧶 Untangle';
+  untangleBtn.dataset.tip = untangled
+    ? 'Hand the map back to the physics'
+    : 'Pull every path into its own lane — no more hairball';
+  untangleBtn.classList.toggle('active', untangled);
+}
+
+untangleBtn.addEventListener('click', () => {
+  untangled = !untangled;
+  if (untangled) {
+    applyUntangle();
+  } else {
+    for (const sn of sim.nodes) sn.pinned = userPinned.has(sn.id);
+    settleTicks = 0;
+    sim.reheat();
+  }
+  renderUntangle();
+});
+
+renderUntangle();
+
 // ---------- sound toggle ----------
 
 const muteBtn = document.getElementById('mute') as HTMLButtonElement;
@@ -467,6 +542,11 @@ async function showSession(id: string | null): Promise<void> {
   session = id ? await store.loadSession(id) : null;
   sim = new ForceSim(window.innerWidth, window.innerHeight);
   seenNodeIds = new Set();
+  userPinned.clear();
+  untangled = false;
+  renderUntangle();
+  view = { x: 0, y: 0, k: 1 };
+  applyView();
   soundArmed = false;
   computeTimeline();
   setReplay(null);

@@ -55,6 +55,8 @@
   select:hover, button:hover { background: #fffceb; }
   button.primary { background: var(--coin); }
   button.primary:hover { background: #ffe14d; }
+  button.active { background: var(--grass); color: #fff; }
+  button.active:hover { background: #22e0af; }
   #stats {
     margin-left: auto; font-size: 13px; white-space: nowrap; font-weight: 700;
     background: var(--ink); color: var(--coin); padding: 6px 12px; border-radius: 999px;
@@ -128,6 +130,7 @@
     <span class="tipwrap" data-tip="Scrub through the timeline"><input type="range" id="replay-range" min="0" max="0" value="0" /></span>
     <span id="replay-label">live</span>
   </div>
+  <button id="untangle"></button>
   <button id="mute"></button>
   <button id="export" class="primary" data-tip="Snapshot the constellation as a PNG">Export PNG</button>
   <span id="stats"></span>

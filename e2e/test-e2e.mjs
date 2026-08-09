@@ -174,6 +174,27 @@ try {
   });
   assert(tipShown, 'hovering Export shows its tooltip bubble');
 
+  // Untangle should spread every node into its own lane, well apart.
+  await map.click('#untangle');
+  await new Promise((r) => setTimeout(r, 800));
+  const spread = await map.evaluate(() => {
+    const pts = [...document.querySelectorAll('#nodes .node')].map((n) => {
+      const cs = n.querySelectorAll('circle');
+      const r = cs[cs.length - 1].getBoundingClientRect();
+      return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+    });
+    let min = Infinity;
+    for (let i = 0; i < pts.length; i++)
+      for (let j = i + 1; j < pts.length; j++)
+        min = Math.min(min, Math.hypot(pts[i].x - pts[j].x, pts[i].y - pts[j].y));
+    return { min, label: document.getElementById('untangle').textContent };
+  });
+  assert(spread.min > 40, `untangled nodes keep their distance (min gap ${spread.min.toFixed(1)}px)`);
+  assert(spread.label.includes('Physics'), 'untangle button toggles to Physics');
+  await map.click('#untangle'); // back to physics
+  await map.mouse.move(640, 500); // park the cursor so no tooltip lingers
+  await new Promise((r) => setTimeout(r, 600));
+
   await map.screenshot({ path: SCREENSHOT });
   console.log('screenshot:', SCREENSHOT);
 } finally {

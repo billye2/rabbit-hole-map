@@ -132,6 +132,55 @@ export function longestChain(session: Session): number {
   return best;
 }
 
+// "Untangle" layout: arrange the navigation forest so no two trails overlap.
+// Each node's parent is the source of its earliest incoming edge; depth maps
+// to a column, and leaves are stacked on distinct rows (parents centered over
+// their children), so every path reads left-to-right in its own lane.
+export function tidyLayout(session: Session): Record<string, { col: number; row: number }> {
+  const byTime = [...session.edges].sort((a, b) => a.time - b.time);
+  const parent: Record<string, string> = {};
+  const isAncestor = (maybeAncestor: string, of: string): boolean => {
+    for (let cur: string | undefined = of; cur != null; cur = parent[cur]) {
+      if (cur === maybeAncestor) return true;
+    }
+    return false;
+  };
+  for (const e of byTime) {
+    if (e.from === e.to || parent[e.to] != null) continue;
+    if (!session.nodes[e.from] || !session.nodes[e.to]) continue;
+    if (isAncestor(e.to, e.from)) continue; // a back-edge must not create a cycle
+    parent[e.to] = e.from;
+  }
+
+  const children: Record<string, string[]> = {};
+  const roots: string[] = [];
+  const inTimeOrder = Object.values(session.nodes).sort((a, b) => a.firstVisit - b.firstVisit);
+  for (const n of inTimeOrder) {
+    const p = parent[n.id];
+    if (p == null) roots.push(n.id);
+    else (children[p] ??= []).push(n.id);
+  }
+
+  const out: Record<string, { col: number; row: number }> = {};
+  let row = 0;
+  const place = (id: string, depth: number): number => {
+    const kids = children[id] ?? [];
+    if (kids.length === 0) {
+      out[id] = { col: depth, row: row++ };
+      return out[id].row;
+    }
+    const kidRows = kids.map((k) => place(k, depth + 1));
+    const mid = (kidRows[0] + kidRows[kidRows.length - 1]) / 2;
+    out[id] = { col: depth, row: mid };
+    return mid;
+  };
+  for (const r of roots) {
+    place(r, 0);
+    row += 0.5; // breathing room between separate trees
+  }
+  return out;
+}
+
 export function fmtDuration(ms: number): string {
   const m = Math.round(ms / 60000);
   if (m < 1) return 'under a minute';

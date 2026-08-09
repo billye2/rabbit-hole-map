@@ -23,6 +23,10 @@ Everything stays on your machine. Nothing is ever sent anywhere.
 - **Drag to pin** — drag a node and it stays exactly where you dropped it
   (gold ring); the physics settles around your arrangement. ⌥-click releases
   a pinned node back to the simulation.
+- **Untangle** — one click swaps the force layout for a tidy left-to-right
+  tree: every trail gets its own lane, branches get their own rows, and the
+  view auto-zooms to fit. No more hairball on 50-page nights. Click again
+  to hand the map back to the physics.
 - **Double-click a node** to reopen that page in a new tab.
 - **Speech-bubble tooltips** on every control, with state-aware text.
 - **Export PNG** — share the constellation (pinned rings and all).
