@@ -20,6 +20,14 @@ Versioning is odometer-style: minor/patch are single digits that carry over
 - Fix: a map opened on the empty state now picks up a brand-new session
   live (the background writes `currentSessionId` before the session data;
   the map now re-checks on any session key change).
+- Testing: e2e migrated from a monolithic puppeteer script to
+  `@playwright/test` (10block's fixture pattern) — 15 isolated tests
+  including new adversarial coverage: fragment normalization, reload
+  behavior, blocklist via the real Options UI, clear-all-data dialogs,
+  alt-click unpin, popup scoreboard accuracy, and the rabbit growth
+  milestone. GitHub Actions CI now runs unit + e2e on every push.
+- Fix: pin gold ring no longer targets a detached element if a live update
+  rebuilds the DOM mid-drag.
 
 ## [1.2.4] — 2026-08-08
 

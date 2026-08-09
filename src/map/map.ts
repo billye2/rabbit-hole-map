@@ -303,9 +303,11 @@ function attachDrag(g: SVGGElement, id: string): void {
     const up = () => {
       // A real drag pins the node where the user left it — no scrunching
       // back. A plain click (no movement) keeps whatever state it had.
+      // Look the element up fresh: a live rebuild mid-drag replaces the DOM
+      // and `g` may be detached by the time the pointer lifts.
       if (moved) {
         userPinned.add(id);
-        g.classList.add('pinned');
+        (nodeEls.get(id) ?? g).classList.add('pinned');
       } else if (!wasPinned && !untangled) {
         node.pinned = false;
       }

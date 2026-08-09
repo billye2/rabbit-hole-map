@@ -97,10 +97,15 @@ Never upload a zip whose version the store has already seen; bump first.
 
 ## Testing philosophy
 
-Every user-facing behavior added so far got an e2e assertion in
-`e2e/test-e2e.mjs` (rendered graph, cross-tab edge, titles, double-click
-reopen, drag-pin drift < 10px, tooltip visibility). If you add a feature,
-extend that file — it's cheap and it has caught two real bugs already.
+Every user-facing behavior gets an e2e test. The suite is `@playwright/test`
+(10block's pattern): `e2e/fixtures.mjs` provides a persistent context with
+the extension loaded, the extension id, and a local test site; specs are
+split by area (tracking / map / untangle / rabbit / session / popup — 15
+tests, ~40s). Playwright's own Chromium still supports `--load-extension`,
+so no Chrome for Testing is needed for tests (only `npm run assets` still
+uses CfT + puppeteer for marketing captures). CI runs unit + e2e on every
+push (`.github/workflows/ci.yml`) and uploads traces on failure. The e2e
+harness has caught five real bugs so far — extend it with every feature.
 
 ## Ideas discussed but not built
 

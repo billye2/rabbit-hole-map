@@ -70,26 +70,21 @@ Store listing copy lives in `docs/STORE_LISTING.md`; privacy docs in
 
 ```sh
 npm test          # unit tests for the pure graph model (node --test)
-npm run e2e       # full browser test — see CHROME_PATH note below
+npm run e2e       # Playwright suite: 15 tests against the real extension
 ```
 
-The e2e launches a real Chrome with the extension loaded, clicks through a
-local test site (same-tab links plus a `target=_blank` hop), then opens the
-map and asserts the stored graph, rendered SVG, double-click reopen,
-drag-to-pin behavior, and tooltip visibility.
+The e2e suite (`e2e/*.spec.mjs`, `@playwright/test`) loads the unpacked
+extension into Playwright's own Chromium — no manual browser wrangling —
+and covers tracking (click chains, cross-tab hops, fragment normalization,
+reload behavior), the map (render, double-click reopen, drag-to-pin,
+alt-click release, tooltips), untangle, the rabbit (roam, carrot drop, eat,
+growth milestone), sessions (live pickup from the empty state, blocklist via
+the real Options UI, clear-all-data), and popup scoreboard accuracy. Both
+suites run in CI on every push (`.github/workflows/ci.yml`), with Playwright
+traces uploaded on failure.
 
-**CHROME_PATH note:** branded Chrome ≥ 137 removed `--load-extension`, so the
-e2e needs a [Chrome for Testing](https://googlechromelabs.github.io/chrome-for-testing/)
-binary:
-
-```sh
-npx @puppeteer/browsers install chrome --path "$PWD/.cache/browsers"
-CHROME_PATH="<printed path>" npm run e2e
-```
-
-If the downloaded app bundle fails to launch with a dlopen error, the JS
-unzipper mangled its symlinks — download the zip from the Chrome for Testing
-site and extract it with `ditto -xk` instead.
+Note: `npm run assets` (marketing captures) still uses puppeteer-core with a
+Chrome for Testing binary — see HANDOFF.md.
 
 ## Architecture
 
