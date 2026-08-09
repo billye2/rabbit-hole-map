@@ -1,87 +1,156 @@
 <!doctype html>
 <html>
-<head>
-<meta charset="utf-8" />
-<title>promo stage</title>
-<style>
-  * { box-sizing: border-box; margin: 0; }
-  html, body { width: 100vw; height: 100vh; overflow: hidden; }
-  body {
-    background: linear-gradient(#4aa3ff, #8fd1ff);
-    font-family: "Arial Rounded MT Bold", "Hiragino Maru Gothic ProN", ui-rounded, sans-serif;
-    color: #2b2857; position: relative;
-  }
-  .cloud { position: absolute; background: rgba(255, 255, 255, 0.85); border-radius: 999px; }
-  .wordmark { font-weight: 700; letter-spacing: 0.02em; }
-  .wordmark .hole { color: #ff4d6d; }
-  .wordmark .map { color: #06d6a0; }
-  .tagline { font-weight: 700; color: #fff6d8; text-shadow: 0 2px 0 rgba(43, 40, 87, 0.4); }
-  .mark { border-radius: 24%; box-shadow: 0 6px 0 rgba(43, 40, 87, 0.45); }
-  .plate {
-    background: #fff6d8; border: 3px solid #2b2857; border-radius: 18px;
-    box-shadow: 0 5px 0 rgba(43, 40, 87, 0.55); padding: 10px 22px;
-  }
+  <head>
+    <meta charset="utf-8" />
+    <title>promo stage</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+      }
+      html,
+      body {
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+      }
+      body {
+        background: linear-gradient(#4aa3ff, #8fd1ff);
+        font-family: 'Arial Rounded MT Bold', 'Hiragino Maru Gothic ProN', ui-rounded, sans-serif;
+        color: #2b2857;
+        position: relative;
+      }
+      .cloud {
+        position: absolute;
+        background: rgba(255, 255, 255, 0.85);
+        border-radius: 999px;
+      }
+      .wordmark {
+        font-weight: 700;
+        letter-spacing: 0.02em;
+      }
+      .wordmark .hole {
+        color: #ff4d6d;
+      }
+      .wordmark .map {
+        color: #06d6a0;
+      }
+      .tagline {
+        font-weight: 700;
+        color: #fff6d8;
+        text-shadow: 0 2px 0 rgba(43, 40, 87, 0.4);
+      }
+      .mark {
+        border-radius: 24%;
+        box-shadow: 0 6px 0 rgba(43, 40, 87, 0.45);
+      }
+      .plate {
+        background: #fff6d8;
+        border: 3px solid #2b2857;
+        border-radius: 18px;
+        box-shadow: 0 5px 0 rgba(43, 40, 87, 0.55);
+        padding: 10px 22px;
+      }
 
-  /* --- small tile 440x280 --- */
-  body.tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; }
-  body.tile .mark { width: 96px; height: 96px; }
-  body.tile .wordmark { font-size: 30px; }
-  body.tile .tagline { font-size: 14px; }
+      /* --- small tile 440x280 --- */
+      body.tile {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+      }
+      body.tile .mark {
+        width: 96px;
+        height: 96px;
+      }
+      body.tile .wordmark {
+        font-size: 30px;
+      }
+      body.tile .tagline {
+        font-size: 14px;
+      }
 
-  /* --- marquee 1400x560 --- */
-  body.marquee { display: flex; align-items: center; justify-content: space-between; padding: 0 90px; }
-  body.marquee .left { display: flex; flex-direction: column; gap: 22px; align-items: flex-start; }
-  body.marquee .brand { display: flex; align-items: center; gap: 26px; }
-  body.marquee .mark { width: 132px; height: 132px; }
-  body.marquee .wordmark { font-size: 56px; }
-  body.marquee .tagline { font-size: 26px; }
-  body.marquee svg.constellation { filter: drop-shadow(0 4px 0 rgba(43, 40, 87, 0.3)); }
-</style>
-</head>
-<body>
-  <div class="cloud" style="width:150px;height:44px;left:6%;top:12%"></div>
-  <div class="cloud" style="width:100px;height:32px;left:14%;top:19%"></div>
-  <div class="cloud" style="width:130px;height:40px;right:8%;bottom:14%;opacity:.7"></div>
+      /* --- marquee 1400x560 --- */
+      body.marquee {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 90px;
+      }
+      body.marquee .left {
+        display: flex;
+        flex-direction: column;
+        gap: 22px;
+        align-items: flex-start;
+      }
+      body.marquee .brand {
+        display: flex;
+        align-items: center;
+        gap: 26px;
+      }
+      body.marquee .mark {
+        width: 132px;
+        height: 132px;
+      }
+      body.marquee .wordmark {
+        font-size: 56px;
+      }
+      body.marquee .tagline {
+        font-size: 26px;
+      }
+      body.marquee svg.constellation {
+        filter: drop-shadow(0 4px 0 rgba(43, 40, 87, 0.3));
+      }
+    </style>
+  </head>
+  <body>
+    <div class="cloud" style="width: 150px; height: 44px; left: 6%; top: 12%"></div>
+    <div class="cloud" style="width: 100px; height: 32px; left: 14%; top: 19%"></div>
+    <div class="cloud" style="width: 130px; height: 40px; right: 8%; bottom: 14%; opacity: 0.7"></div>
 
-  <template id="tile-t">
-    <img class="mark" src="../../icons/icon128.png" alt="" />
-    <div class="wordmark">Rabbit <span class="hole">Hole</span> <span class="map">Map</span></div>
-    <div class="tagline">Your browsing, as a constellation</div>
-  </template>
+    <template id="tile-t">
+      <img class="mark" src="../../icons/icon128.png" alt="" />
+      <div class="wordmark">Rabbit <span class="hole">Hole</span> <span class="map">Map</span></div>
+      <div class="tagline">Your browsing, as a constellation</div>
+    </template>
 
-  <template id="marquee-t">
-    <div class="left">
-      <div class="brand">
-        <img class="mark" src="../../icons/icon128.png" alt="" />
-        <div class="wordmark">Rabbit <span class="hole">Hole</span> <span class="map">Map</span></div>
+    <template id="marquee-t">
+      <div class="left">
+        <div class="brand">
+          <img class="mark" src="../../icons/icon128.png" alt="" />
+          <div class="wordmark">Rabbit <span class="hole">Hole</span> <span class="map">Map</span></div>
+        </div>
+        <div class="tagline">Watch the rabbit hole bloom. Replay the descent.</div>
+        <div class="plate" style="font-size: 20px">⭐ 13 pages · 12 hops · ⏱ 1h 45m well wasted</div>
       </div>
-      <div class="tagline">Watch the rabbit hole bloom. Replay the descent.</div>
-      <div class="plate" style="font-size:20px">⭐ 13 pages · 12 hops · ⏱ 1h 45m well wasted</div>
-    </div>
-    <svg class="constellation" width="520" height="420" viewBox="0 0 520 420">
-      <g stroke="#ffffff" stroke-width="4" stroke-linecap="round" opacity="0.95">
-        <line x1="80" y1="90" x2="200" y2="150" /><line x1="200" y1="150" x2="150" y2="280" />
-        <line x1="200" y1="150" x2="330" y2="110" /><line x1="330" y1="110" x2="420" y2="200" />
-        <line x1="420" y1="200" x2="360" y2="330" /><line x1="360" y1="330" x2="230" y2="360" />
-        <line x1="420" y1="200" x2="490" y2="300" />
-      </g>
-      <g stroke="#ffffff" stroke-width="5">
-        <circle cx="80" cy="90" r="18" fill="#ff4d6d" />
-        <circle cx="200" cy="150" r="26" fill="#ffd60a" />
-        <circle cx="150" cy="280" r="16" fill="#06d6a0" />
-        <circle cx="330" cy="110" r="20" fill="#4cc9f0" />
-        <circle cx="420" cy="200" r="30" fill="#f15bb5" />
-        <circle cx="360" cy="330" r="18" fill="#9b5de5" />
-        <circle cx="230" cy="360" r="14" fill="#ff9f1c" />
-        <circle cx="490" cy="300" r="16" fill="#00f5d4" />
-      </g>
-    </svg>
-  </template>
+      <svg class="constellation" width="520" height="420" viewBox="0 0 520 420">
+        <g stroke="#ffffff" stroke-width="4" stroke-linecap="round" opacity="0.95">
+          <line x1="80" y1="90" x2="200" y2="150" />
+          <line x1="200" y1="150" x2="150" y2="280" />
+          <line x1="200" y1="150" x2="330" y2="110" />
+          <line x1="330" y1="110" x2="420" y2="200" />
+          <line x1="420" y1="200" x2="360" y2="330" />
+          <line x1="360" y1="330" x2="230" y2="360" />
+          <line x1="420" y1="200" x2="490" y2="300" />
+        </g>
+        <g stroke="#ffffff" stroke-width="5">
+          <circle cx="80" cy="90" r="18" fill="#ff4d6d" />
+          <circle cx="200" cy="150" r="26" fill="#ffd60a" />
+          <circle cx="150" cy="280" r="16" fill="#06d6a0" />
+          <circle cx="330" cy="110" r="20" fill="#4cc9f0" />
+          <circle cx="420" cy="200" r="30" fill="#f15bb5" />
+          <circle cx="360" cy="330" r="18" fill="#9b5de5" />
+          <circle cx="230" cy="360" r="14" fill="#ff9f1c" />
+          <circle cx="490" cy="300" r="16" fill="#00f5d4" />
+        </g>
+      </svg>
+    </template>
 
-  <script>
-    const variant = new URLSearchParams(location.search).get('variant') ?? 'tile';
-    document.body.classList.add(variant);
-    document.body.append(document.getElementById(variant + '-t').content.cloneNode(true));
-  </script>
-</body>
+    <script>
+      const variant = new URLSearchParams(location.search).get('variant') ?? 'tile';
+      document.body.classList.add(variant);
+      document.body.append(document.getElementById(variant + '-t').content.cloneNode(true));
+    </script>
+  </body>
 </html>

@@ -49,7 +49,7 @@ export interface RabbitLayer {
 function el<K extends keyof SVGElementTagNameMap>(
   tag: K,
   attrs: Record<string, string | number>,
-  parent?: SVGElement
+  parent?: SVGElement,
 ): SVGElementTagNameMap[K] {
   const e = document.createElementNS(SVGNS, tag);
   for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, String(v));
@@ -78,34 +78,50 @@ function buildRabbit(parent: SVGGElement): RabbitParts {
   // ears (behind the head), slightly splayed
   el('rect', { x: 3, y: -55, width: 7, height: 24, rx: 3.5, fill: WHITE, transform: 'rotate(-8 6.5 -43)' }, squash);
   el('rect', { x: 13, y: -54, width: 7, height: 24, rx: 3.5, fill: WHITE, transform: 'rotate(8 16.5 -42)' }, squash);
-  const earL = el('rect', { x: 5, y: -52, width: 3, height: 17, rx: 1.5, fill: PINK, transform: 'rotate(-8 6.5 -43)' }, squash);
-  const earR = el('rect', { x: 15, y: -51, width: 3, height: 17, rx: 1.5, fill: PINK, transform: 'rotate(8 16.5 -42)' }, squash);
+  const earL = el(
+    'rect',
+    { x: 5, y: -52, width: 3, height: 17, rx: 1.5, fill: PINK, transform: 'rotate(-8 6.5 -43)' },
+    squash,
+  );
+  const earR = el(
+    'rect',
+    { x: 15, y: -51, width: 3, height: 17, rx: 1.5, fill: PINK, transform: 'rotate(8 16.5 -42)' },
+    squash,
+  );
   el('circle', { cx: 10, cy: -27, r: 10.5, fill: WHITE }, squash); // head
   const eye = el('circle', { class: 'eye', cx: 13, cy: -29, r: 1.7, fill: NAVY }, squash); // eye
   el('circle', { cx: 20, cy: -26, r: 1.8, fill: PINK }, squash); // nose
   // fangs — hidden until frenzy
-  const fangs = el('path', {
-    class: 'fangs',
-    d: 'M 12 -17.5 l 2.4 5.5 l 2.4 -5.5 z M 5.5 -17.5 l 2.4 5.5 l 2.4 -5.5 z',
-    fill: WHITE,
-    stroke: NAVY,
-    'stroke-width': 0.9,
-    visibility: 'hidden',
-  }, squash);
+  const fangs = el(
+    'path',
+    {
+      class: 'fangs',
+      d: 'M 12 -17.5 l 2.4 5.5 l 2.4 -5.5 z M 5.5 -17.5 l 2.4 5.5 l 2.4 -5.5 z',
+      fill: WHITE,
+      stroke: NAVY,
+      'stroke-width': 0.9,
+      visibility: 'hidden',
+    },
+    squash,
+  );
   el('ellipse', { cx: 8, cy: -2.5, rx: 6, ry: 2.5, fill: WHITE }, squash); // front paw
 
   // "!" alert bubble
   const bubble = el('g', { class: 'alert-bubble', visibility: 'hidden' }, root);
   el('rect', { x: -9, y: -86, width: 18, height: 22, rx: 7, fill: WHITE, stroke: NAVY, 'stroke-width': 2 }, bubble);
-  el('text', {
-    x: 0,
-    y: -69,
-    'text-anchor': 'middle',
-    fill: NAVY,
-    'font-size': 16,
-    'font-weight': 'bold',
-    'font-family': 'Arial Rounded MT Bold, sans-serif',
-  }, bubble).textContent = '!';
+  el(
+    'text',
+    {
+      x: 0,
+      y: -69,
+      'text-anchor': 'middle',
+      fill: NAVY,
+      'font-size': 16,
+      'font-weight': 'bold',
+      'font-family': 'Arial Rounded MT Bold, sans-serif',
+    },
+    bubble,
+  ).textContent = '!';
   return { root, squash, bubble, eye, innerEars: [earL, earR], aura, fangs };
 }
 
@@ -252,7 +268,7 @@ export function initRabbit(svg: SVGSVGElement): RabbitLayer {
         if (c.y >= gy - 18) {
           c.y = gy - 18;
           c.landed = true;
-          c.rot = c.rot % 20 - 10; // settle at a slight tilt
+          c.rot = (c.rot % 20) - 10; // settle at a slight tilt
           onCarrotLanded(now);
         }
         c.el.setAttribute('transform', `translate(${c.x},${c.y}) rotate(${c.rot})`);

@@ -23,8 +23,7 @@ test('untangle spreads nodes into lanes and toggles back to physics', async ({ c
     });
     let min = Infinity;
     for (let i = 0; i < pts.length; i++)
-      for (let j = i + 1; j < pts.length; j++)
-        min = Math.min(min, Math.hypot(pts[i].x - pts[j].x, pts[i].y - pts[j].y));
+      for (let j = i + 1; j < pts.length; j++) min = Math.min(min, Math.hypot(pts[i].x - pts[j].x, pts[i].y - pts[j].y));
     return min;
   });
   expect(minGap).toBeGreaterThan(40);

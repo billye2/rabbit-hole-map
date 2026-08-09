@@ -25,11 +25,7 @@ export const test = base.extend({
   context: async ({}, use) => {
     const context = await chromium.launchPersistentContext('', {
       channel: 'chromium',
-      args: [
-        `--disable-extensions-except=${EXTENSION_PATH}`,
-        `--load-extension=${EXTENSION_PATH}`,
-        '--no-first-run',
-      ],
+      args: [`--disable-extensions-except=${EXTENSION_PATH}`, `--load-extension=${EXTENSION_PATH}`, '--no-first-run'],
     });
     await use(context);
     await context.close();
@@ -84,7 +80,7 @@ export async function waitForNodes(page, n, timeout = 8000) {
       return s && Object.keys(s.nodes).length >= want;
     },
     n,
-    { timeout }
+    { timeout },
   );
 }
 
@@ -99,14 +95,14 @@ export async function waitForTracked(probePage, url, timeout = 8000) {
       return !!(s && s.nodes[u]);
     },
     url,
-    { timeout }
+    { timeout },
   );
 }
 
 export function dotCenter(map, label) {
   return map.evaluate((lbl) => {
     const t = [...document.querySelectorAll('#nodes .node')].find((n) =>
-      n.querySelector('text')?.textContent?.includes(lbl)
+      n.querySelector('text')?.textContent?.includes(lbl),
     );
     if (!t) return null;
     const cs = t.querySelectorAll('circle');

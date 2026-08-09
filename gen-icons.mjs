@@ -74,7 +74,10 @@ function drawIcon(size) {
   const SS = 3; // supersampling per axis
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
-      let rSum = 0, gSum = 0, bSum = 0, aSum = 0;
+      let rSum = 0,
+        gSum = 0,
+        bSum = 0,
+        aSum = 0;
       for (let sy = 0; sy < SS; sy++) {
         for (let sx = 0; sx < SS; sx++) {
           const px = x + (sx + 0.5) / SS;

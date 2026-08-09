@@ -133,7 +133,10 @@ test('hungerShrink: -10% per tick, converges to exactly 1 and stays there', () =
     seen.push(s);
   }
   assert.equal(s, 1);
-  assert.ok(seen.every((v) => v >= 1), 'never shrinks below the original size');
+  assert.ok(
+    seen.every((v) => v >= 1),
+    'never shrinks below the original size',
+  );
   assert.equal(hungerShrink(1), 1); // fully starved rabbit stays original size
 });
 

@@ -54,7 +54,7 @@ test('the 5th carrot triggers a monster feeding frenzy and +25% growth', async (
   let sawMonster = false;
   for (let i = 0; i < 120 && !sawMonster; i++) {
     sawMonster = await map.evaluate(
-      () => document.querySelector('#burrow-layer .rabbit .fangs')?.getAttribute('visibility') === 'visible'
+      () => document.querySelector('#burrow-layer .rabbit .fangs')?.getAttribute('visibility') === 'visible',
     );
     if (!sawMonster) await new Promise((r) => setTimeout(r, 250));
   }
@@ -68,13 +68,13 @@ test('the 5th carrot triggers a monster feeding frenzy and +25% growth', async (
       const scale = m ? Math.abs(Number(m[1])) : 1;
       return scale >= 1.2 && document.querySelectorAll('#burrow-layer .carrot').length === 0;
     },
-    { timeout: 90_000, polling: 500 }
+    { timeout: 90_000, polling: 500 },
   );
 
   // The frenzy wears off and the cute form returns (fangs hidden).
   await map.waitForFunction(
     () => document.querySelector('#burrow-layer .rabbit .fangs')?.getAttribute('visibility') === 'hidden',
-    { timeout: 15_000, polling: 500 }
+    { timeout: 15_000, polling: 500 },
   );
 });
 
@@ -91,10 +91,10 @@ test('an unfed rabbit gets hungry and shrinks 10% after 30 seconds', async ({ co
     await page.goto(site + path);
     await new Promise((r) => setTimeout(r, 700));
   }
-  await map.waitForFunction(
-    () => document.querySelectorAll('#burrow-layer .carrot').length === 0,
-    { timeout: 60_000, polling: 500 }
-  );
+  await map.waitForFunction(() => document.querySelectorAll('#burrow-layer .carrot').length === 0, {
+    timeout: 60_000,
+    polling: 500,
+  });
   expect(await rabbitScale(map)).toBeGreaterThanOrEqual(1.2);
 
   // Starve it: one hunger tick (30s after the last meal) shrinks it 10%.
@@ -104,7 +104,7 @@ test('an unfed rabbit gets hungry and shrinks 10% after 30 seconds', async ({ co
       const m = /scale\(([-\d.]+)/.exec(g?.getAttribute('transform') ?? '');
       return m && Math.abs(Number(m[1])) < 1.2;
     },
-    { timeout: 45_000, polling: 1000 }
+    { timeout: 45_000, polling: 1000 },
   );
   const shrunk = await rabbitScale(map);
   expect(shrunk).toBeGreaterThanOrEqual(1); // decays toward, never below, original

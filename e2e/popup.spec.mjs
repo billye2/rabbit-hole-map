@@ -15,7 +15,7 @@ const SESSION = {
     ].map(([url, title, visits]) => [
       url,
       { id: url, url, title, domain: new URL(url).hostname, firstVisit: T0, lastVisit: T0, visits },
-    ])
+    ]),
   ),
   edges: [
     { from: 'https://a.com/', to: 'https://b.com/', time: T0 + 60_000, transition: 'link' },
@@ -35,10 +35,10 @@ test('popup scoreboard reports the session accurately', async ({ context, extens
             currentSessionId: s.id,
             sessionIndex: [{ id: s.id, start: s.start, end: s.end, pages: Object.keys(s.nodes).length }],
           },
-          res
-        )
+          res,
+        ),
       ),
-    SESSION
+    SESSION,
   );
 
   const popup = await context.newPage();
