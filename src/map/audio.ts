@@ -38,6 +38,24 @@ export function playPop(): void {
   coinBlip(ac, BASE_FREQ * Math.pow(2, step / 12));
 }
 
+// A soft little munch tick — three of these in a row reads as nibbling.
+export function playNibble(): void {
+  const ac = ensureCtx();
+  if (!ac) return;
+  const t = ac.currentTime;
+  const osc = ac.createOscillator();
+  const gain = ac.createGain();
+  osc.type = 'triangle';
+  osc.frequency.setValueAtTime(320, t);
+  osc.frequency.exponentialRampToValueAtTime(180, t + 0.07);
+  gain.gain.setValueAtTime(0.0001, t);
+  gain.gain.exponentialRampToValueAtTime(0.05, t + 0.008);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
+  osc.connect(gain).connect(ac.destination);
+  osc.start(t);
+  osc.stop(t + 0.1);
+}
+
 // Classic coin shape: a short tone that jumps up a fourth and rings out.
 function coinBlip(ac: AudioContext, freq: number): void {
   const t = ac.currentTime;

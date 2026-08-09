@@ -2,6 +2,7 @@ import { fmtDuration, tidyLayout, type NavEdge, type PageNode, type Session, typ
 import * as store from '../storage.js';
 import { ForceSim, hashSeed } from './force.js';
 import { isMuted, playPop, setMuted } from './audio.js';
+import { initRabbit } from './rabbit.js';
 
 const svg = document.getElementById('canvas') as unknown as SVGSVGElement;
 const viewport = document.getElementById('viewport') as unknown as SVGGElement;
@@ -16,6 +17,9 @@ const replayPlay = document.getElementById('replay-play') as HTMLButtonElement;
 const exportBtn = document.getElementById('export') as HTMLButtonElement;
 
 const SVGNS = 'http://www.w3.org/2000/svg';
+
+// The roaming rabbit + carrot ground layer (screen-space, above the graph).
+const rabbit = initRabbit(svg);
 
 let session: Session | null = null;
 let sim = new ForceSim(window.innerWidth, window.innerHeight);
@@ -122,7 +126,8 @@ function rebuild(): void {
   // --- nodes ---
   nodesG.textContent = '';
   nodeEls = new Map();
-  const newCount = nodes.reduce((c, n) => c + (seenNodeIds.has(n.id) ? 0 : 1), 0);
+  const newIds = nodes.filter((n) => !seenNodeIds.has(n.id)).map((n) => n.id);
+  const newCount = newIds.length;
   const byId = new Map(nodes.map((n) => [n.id, n]));
   for (const n of nodes) {
     const g = document.createElementNS(SVGNS, 'g');
@@ -203,6 +208,16 @@ function rebuild(): void {
     // the tab is hidden, and unpositioned nodes would all sit at (0,0).
     renderPositions();
   }
+
+  // Every live-added site drops a carrot from its node for the rabbit —
+  // same guard as the coin blips, so opening an old session isn't a feast.
+  if (soundArmed && newIds.length) {
+    const pos = new Map(sim.nodes.map((sn) => [sn.id, sn]));
+    for (const id of newIds.slice(0, 12)) {
+      const p = pos.get(id);
+      if (p) rabbit.dropCarrot(p.x * view.k + view.x, p.y * view.k + view.y);
+    }
+  }
 }
 
 function updateStats(nodes: PageNode[], edges: NavEdge[]): void {
@@ -243,6 +258,7 @@ function frame(): void {
     if (v < 0.05) settleTicks = 600;
     else settleTicks++;
   }
+  rabbit.tick(performance.now());
   requestAnimationFrame(frame);
 }
 
@@ -578,6 +594,7 @@ window.addEventListener('resize', () => {
   sim.width = window.innerWidth;
   sim.height = window.innerHeight;
   settleTicks = 0;
+  rabbit.resize();
 });
 
 init();

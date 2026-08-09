@@ -19,6 +19,7 @@ const PAGES = {
   '/b': `<!doctype html><title>Page B</title><a id="to-c" href="/c">go to C</a>`,
   '/c': `<!doctype html><title>Page C</title><p>the bottom of the hole</p>`,
   '/d': `<!doctype html><title>Page D</title><p>side quest</p>`,
+  '/e': `<!doctype html><title>Page E</title><p>fresh carrot bait</p>`,
 };
 
 const server = http.createServer((req, res) => {
@@ -194,6 +195,55 @@ try {
   await map.click('#untangle'); // back to physics
   await map.mouse.move(640, 500); // park the cursor so no tooltip lingers
   await new Promise((r) => setTimeout(r, 600));
+
+  // The rabbit roams the ground while the map is open.
+  const rabbitState = await map.evaluate(async () => {
+    const g = document.querySelector('#burrow-layer .rabbit');
+    if (!g) return { exists: false, moved: false };
+    const t1 = g.getAttribute('transform');
+    await new Promise((r) => setTimeout(r, 1500));
+    return { exists: true, moved: g.getAttribute('transform') !== t1 };
+  });
+  assert(rabbitState.exists, 'rabbit exists on the ground layer');
+  assert(rabbitState.moved, 'rabbit is animating (roaming/breathing)');
+
+  // A live-added site drops a carrot... (navigate the background tab so the
+  // map tab stays focused and its rAF loop keeps running).
+  await page.goto(base + '/e', { waitUntil: 'load' });
+  const sawCarrot = await map.evaluate(
+    () =>
+      new Promise((res) => {
+        const t0 = Date.now();
+        const iv = setInterval(() => {
+          if (document.querySelector('#burrow-layer .carrot')) {
+            clearInterval(iv);
+            res(true);
+          } else if (Date.now() - t0 > 6000) {
+            clearInterval(iv);
+            res(false);
+          }
+        }, 200);
+      })
+  );
+  assert(sawCarrot, 'a carrot dropped for the live-added site');
+
+  // ...and the rabbit eventually eats it.
+  const carrotEaten = await map.evaluate(
+    () =>
+      new Promise((res) => {
+        const t0 = Date.now();
+        const iv = setInterval(() => {
+          if (!document.querySelector('#burrow-layer .carrot')) {
+            clearInterval(iv);
+            res(true);
+          } else if (Date.now() - t0 > 14000) {
+            clearInterval(iv);
+            res(false);
+          }
+        }, 300);
+      })
+  );
+  assert(carrotEaten, 'the rabbit chased down and ate the carrot');
 
   await map.screenshot({ path: SCREENSHOT });
   console.log('screenshot:', SCREENSHOT);

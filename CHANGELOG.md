@@ -3,6 +3,15 @@
 Versioning is odometer-style: minor/patch are single digits that carry over
 (1.1.9 → 1.2.0). Bump with `npm run bump`.
 
+## [Unreleased]
+
+- **Roaming rabbit + carrot drops** — a code-drawn rabbit hops along a grass
+  band at the bottom of the map (screen-space layer, unaffected by pan/zoom).
+  Each live-added site drops a carrot from its node; the rabbit alerts (!),
+  chases the nearest landed carrot, and eats it in three nibbles (soft
+  triangle-blip sound, respects mute). Same `soundArmed` guard as the coin
+  blips, so opening an old session doesn't rain carrots — but replay does.
+
 ## [1.2.4] — 2026-08-08
 
 - New icon: a white rabbit peeking out of its hole (replaces the spiral),

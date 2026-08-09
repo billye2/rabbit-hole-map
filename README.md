@@ -28,6 +28,9 @@ Everything stays on your machine. Nothing is ever sent anywhere.
   view auto-zooms to fit. No more hairball on 50-page nights. Click again
   to hand the map back to the physics.
 - **Double-click a node** to reopen that page in a new tab.
+- **A resident rabbit** roams the grass at the bottom of the map. Every site
+  you visit live drops a carrot from its node; the rabbit startles (❗),
+  chases it down, and nibbles it gone.
 - **Speech-bubble tooltips** on every control, with state-aware text.
 - **Export PNG** — share the constellation (pinned rings and all).
 - **Popup scoreboard** — pages visited, hops, deepest burrow, top haunt, and
