@@ -17,8 +17,10 @@
     "e2e": "npm run build && playwright test"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.12.1",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.62.1",
+    "@resvg/resvg-js": "^2.6.2",
     "@types/chrome": "^0.0.280",
     "esbuild": "^0.24.0",
     "eslint": "^10.8.1",
