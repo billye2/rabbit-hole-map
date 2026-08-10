@@ -158,12 +158,12 @@ harness has caught five real bugs so far — extend it with every feature.
 
 ## Ideas discussed but not built
 
-- Upload v1.2.5 to the Web Store (package is ready; still needs a developer
-  account). The privacy policy is hosted publicly at
-  https://github.com/billye2/pdfxtn/blob/main/docs/rabbit-hole-map-PRIVACY.md
-  — this repo is private, so the public pdfxtn sibling hosts the canonical
-  copy (same arrangement as 10block). Standing rule: edit
-  `rabbit-hole-map-PRIVACY.md` here and the pdfxtn copy together.
+- Upload the latest release to the Web Store (package is ready; still needs
+  a developer account). The privacy policy URL is this repo's own copy —
+  the repo is public as of 2026-08-09:
+  https://github.com/billye2/rabbit-hole-map/blob/main/rabbit-hole-map-PRIVACY.md
+  (it briefly lived in the pdfxtn sibling while this repo was private; that
+  copy is gone, there is nothing to keep in sync.)
 - Upload the promo video to YouTube and paste the URL into
   `docs/STORE_LISTING.md` (the video itself exists:
   `marketing/store/promo-video.webm`, regenerated via `npm run assets:video`).

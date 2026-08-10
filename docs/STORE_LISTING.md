@@ -86,10 +86,9 @@ Promo video: `marketing/store/promo-video.webm` (~40s, regenerate with
 ## Privacy tab
 
 - Privacy policy URL:
-  https://github.com/billye2/pdfxtn/blob/main/docs/rabbit-hole-map-PRIVACY.md
-  (hosted in the public pdfxtn sibling repo because this repo is private —
-  same arrangement as 10block. When editing `rabbit-hole-map-PRIVACY.md`
-  here, update the pdfxtn copy in the same change.)
+  https://github.com/billye2/rabbit-hole-map/blob/main/rabbit-hole-map-PRIVACY.md
+  (this repo is public, so the policy hosts itself — no sibling copy to keep
+  in sync.)
 - Copy the answers verbatim from `docs/privacy-practices-copy.md`.
 
 ## Pre-submit checklist

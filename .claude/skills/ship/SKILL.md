@@ -18,9 +18,8 @@ against the docs and fix drift:
 - `README.md` — Features / Scope bullets for new or changed behavior. Watch
   for behavior lines a change made FALSE.
 - `docs/STORE_LISTING.md` + `rabbit-hole-map-PRIVACY.md` — only when
-  user-visible behavior, permissions, or data storage changed. The privacy
-  policy has a hosted twin at pdfxtn/docs/rabbit-hole-map-PRIVACY.md —
-  **edit both copies together**.
+  user-visible behavior, permissions, or data storage changed. The policy's
+  public URL is this repo's own copy on GitHub (the repo is public).
 - `marketing/` — if the UI changed visibly, regenerate `npm run assets`
   (and `npm run assets:video` if the flow shown in the video changed).
 
