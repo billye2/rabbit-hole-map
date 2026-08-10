@@ -127,13 +127,16 @@ if (dryRun) {
 const zipPath = `release/rabbit-hole-map-${next}.zip`;
 if (existsSync(zipPath)) fail(`${zipPath} already exists`);
 
-// Keep package.json and the manifest on the same version.
+// Keep package.json and the manifest on the same version. Rewrite through
+// prettier so the release commit itself can't go red in the lint gate
+// (JSON.stringify's array formatting differs from prettier's).
 if (!noBump) {
   for (const file of ['package.json', 'manifest.json']) {
     const data = readJSON(file);
     data.version = next;
     writeFileSync(file, JSON.stringify(data, null, 2) + '\n');
   }
+  execFileSync('npx', ['prettier', '--write', 'package.json', 'manifest.json'], { stdio: 'inherit' });
 }
 
 console.log(`\n→ packaging v${next}`);
