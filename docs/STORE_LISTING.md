@@ -10,10 +10,11 @@ Everything to paste into the Developer Dashboard for Rabbit Hole Map.
 
 ## Listing fields
 
-**Name:** Rabbit Hole Map
-_(comes from the manifest `name`. If we want a keyword-rich store title later —
-e.g. "Rabbit Hole Map: See Where the Time Went", 41/45 chars — change the
-manifest name and ship a new zip; the listing follows the manifest.)_
+**Name:** Rabbit Hole Map — Browsing History Visualizer
+_(45/45 chars, SEO pass approved 2026-08-09: brand prefix + the
+highest-volume search terms. Comes from the manifest `name` — renaming means
+a new zip + review round, so keep it stable. The repo/dev name stays plain
+"rabbit-hole-map".)_
 
 **Summary (short description, ≤132 chars):**
 

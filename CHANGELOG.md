@@ -8,6 +8,12 @@ _next_ version first (preview the number with `npm run bump -- --dry`).
 `npm run release` refuses to run without it, and that section becomes the
 GitHub release notes verbatim via `npm run release:publish`.
 
+## [1.2.7] — 2026-08-09
+
+- SEO title: the extension is now "Rabbit Hole Map — Browsing History
+  Visualizer" (45/45 chars) in the store and toolbar; branding-only release,
+  no behavior changes. The repo keeps the short dev name.
+
 ## [1.2.6] — 2026-08-09
 
 - Accessibility: pages declare their language, the popup has a title, page
