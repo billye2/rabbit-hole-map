@@ -21,7 +21,8 @@ promo video), privacy docs in place. Not yet uploaded to the store.
 | 1.2.2   | — (no tag) | ✓   | skipped (predates rabbit mascot)                |
 | 1.2.3   | v1.2.3     | ✓   | skipped                                         |
 | 1.2.4   | v1.2.4     | ✓   | skipped                                         |
-| 1.2.5   | v1.2.5     | ✓   | **queued — upload this one** (nothing live yet) |
+| 1.2.5   | v1.2.5     | ✓   | skipped (superseded before upload)              |
+| 1.2.6   | v1.2.6     | ✓   | **queued — upload this one** (nothing live yet) |
 
 Keep this table current: versions superseded before reaching the store get
 tags but no store upload. Record the submission date + review outcome here
