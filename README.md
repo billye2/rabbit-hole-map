@@ -50,7 +50,8 @@ them:
   every carrot on the ground is gone, then reverts to its cute (bigger)
   self. Go 30 seconds without feeding it and hunger shrinks it 10% at a
   time, back down to — but never below — its original size.
-- **Speech-bubble tooltips** on every control, with state-aware text.
+- **Speech-bubble tooltips** on every map control, with state-aware text
+  (the popup keeps its single button self-explanatory, no bubble).
 - **Export PNG** — share the constellation (pinned rings and all).
 - **Popup scoreboard** — pages visited, hops, deepest burrow, top haunt, and
   time gloriously wasted.

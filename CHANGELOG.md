@@ -8,6 +8,24 @@ _next_ version first (preview the number with `npm run bump -- --dry`).
 `npm run release` refuses to run without it, and that section becomes the
 GitHub release notes verbatim via `npm run release:publish`.
 
+## [1.2.6] — 2026-08-09
+
+- Accessibility: pages declare their language, the popup has a title, page
+  content sits in proper landmarks, and the replay scrubber + session picker
+  now carry accessible names for screen readers. Backed by a new axe-core
+  e2e tier (documented per-element exceptions only).
+- The popup's "🗺️ Open the map" button no longer shows a hover tooltip —
+  the label already says what it does.
+- Icon: added the 32px size (toolbar + extensions page); the icon is now
+  generated from a single SVG source (`icons/icon.svg`, resvg) with
+  pixel-identical art.
+- Store readiness: ~40s promo video recorded from the real extension
+  (`npm run assets:video`), privacy policy hosted at this now-public repo's
+  own URL, paste-ready listing docs refreshed.
+- Process: two-phase gated release (`npm run release` / `release:publish`),
+  eslint + prettier with a CI lint step, visual-regression screenshot tier,
+  manual pre-submit QA checklist, `/ship` skill.
+
 ## [1.2.5] — 2026-08-09
 
 - **Monster feeding frenzy** — hitting a growth milestone transforms the
