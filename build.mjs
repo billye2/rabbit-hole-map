@@ -23,6 +23,7 @@ await esbuild.build({
     gameplay: 'src/map/gameplay.ts',
     schema: 'src/schema.ts',
     storage: 'src/storage.ts',
+    force: 'src/map/force.ts',
   },
   outdir: 'dist',
   outExtension: { '.js': '.mjs' },

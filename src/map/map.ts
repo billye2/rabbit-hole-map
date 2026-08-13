@@ -103,11 +103,12 @@ function rebuild(): void {
   const { nodes, edges } = visibleGraph();
   emptyEl.style.display = nodes.length === 0 ? 'flex' : 'none';
 
-  for (const n of nodes) sim.ensureNode(n.id, nodeRadius(n));
-  // Drop sim nodes no longer visible (replay scrubbing backwards).
-  const keep = new Set(nodes.map((n) => n.id));
-  sim.nodes = sim.nodes.filter((sn) => keep.has(sn.id));
-  sim.setEdges(edges.map((e) => [e.from, e.to]));
+  // One call describes the visible graph: survivors keep their positions,
+  // nodes scrubbed out of a replay are dropped, edges ride along by id.
+  sim.setGraph(
+    nodes.map((n) => ({ id: n.id, r: nodeRadius(n) })),
+    edges.map((e) => [e.from, e.to]),
+  );
 
   // --- edges ---
   edgesG.textContent = '';
@@ -270,19 +271,18 @@ function applyView(): void {
 function attachDrag(g: SVGGElement, id: string): void {
   g.addEventListener('pointerdown', (ev) => {
     ev.stopPropagation();
-    const node = sim.nodes.find((n) => n.id === id);
-    if (!node) return;
+    if (!sim.has(id)) return;
 
     // Alt-click releases a user-pinned node back to the physics.
     if (ev.altKey && userPinned.has(id)) {
       userPinned.delete(id);
-      if (!untangled) node.pinned = false;
+      if (!untangled) sim.release(id);
       g.classList.remove('pinned');
       settleTicks = 0;
       return;
     }
 
-    node.pinned = true;
+    sim.pin(id);
     const wasPinned = g.classList.contains('pinned');
     let moved = false;
     const startX = ev.clientX;
@@ -290,8 +290,9 @@ function attachDrag(g: SVGGElement, id: string): void {
     const move = (mv: PointerEvent) => {
       if (Math.hypot(mv.clientX - startX, mv.clientY - startY) > 4) moved = true;
       const p = svgPoint(mv.clientX, mv.clientY);
-      node.x = p.x;
-      node.y = p.y;
+      // Address the node by id: a live rebuild mid-drag may have replaced
+      // the sim's node set, and the current sim is always the right target.
+      sim.place(id, p.x, p.y);
       settleTicks = 0;
       renderPositions();
     };
@@ -304,7 +305,7 @@ function attachDrag(g: SVGGElement, id: string): void {
         userPinned.add(id);
         (nodeEls.get(id) ?? g).classList.add('pinned');
       } else if (!wasPinned && !untangled) {
-        node.pinned = false;
+        sim.release(id);
       }
       settleTicks = 0;
       window.removeEventListener('pointermove', move);
@@ -468,11 +469,8 @@ function applyUntangle(): void {
   for (const sn of sim.nodes) {
     const p = grid[sn.id];
     if (!p) continue;
-    sn.x = 120 + p.col * COL_W;
-    sn.y = 160 + p.row * ROW_H;
-    sn.vx = 0;
-    sn.vy = 0;
-    sn.pinned = true; // freeze the tidy layout against the physics
+    // Freeze the tidy layout against the physics.
+    sim.place(sn.id, 120 + p.col * COL_W, 160 + p.row * ROW_H, { pin: true });
   }
   fitView();
   renderPositions();
@@ -510,7 +508,10 @@ untangleBtn.addEventListener('click', () => {
   if (untangled) {
     applyUntangle();
   } else {
-    for (const sn of sim.nodes) sn.pinned = userPinned.has(sn.id);
+    for (const sn of sim.nodes) {
+      if (userPinned.has(sn.id)) sim.pin(sn.id);
+      else sim.release(sn.id);
+    }
     settleTicks = 0;
     sim.reheat();
   }
@@ -596,8 +597,7 @@ async function init(): Promise<void> {
 }
 
 window.addEventListener('resize', () => {
-  sim.width = window.innerWidth;
-  sim.height = window.innerHeight;
+  sim.resize(window.innerWidth, window.innerHeight);
   settleTicks = 0;
   rabbit.resize();
 });

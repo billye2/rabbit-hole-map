@@ -1,6 +1,11 @@
 // Tiny force-directed layout: pairwise repulsion, spring edges, center
 // gravity, velocity damping. O(n²) per tick — fine for the hundreds of nodes
 // a browsing session produces.
+//
+// The node set is sealed inside the sim: callers describe the whole graph
+// with setGraph (edges by id, survivors keep their positions) and move
+// individual nodes only through place/pin/release. `nodes` is a read-only
+// view for rendering.
 
 export interface SimNode {
   id: string;
@@ -12,9 +17,9 @@ export interface SimNode {
   pinned: boolean;
 }
 
-export interface SimEdge {
-  from: number; // index into nodes
-  to: number;
+interface SimEdge {
+  from: string; // node id
+  to: string;
 }
 
 const REPULSION = 6000;
@@ -36,51 +41,87 @@ export function hashSeed(s: string): number {
 }
 
 export class ForceSim {
-  nodes: SimNode[] = [];
-  edges: SimEdge[] = [];
-  width: number;
-  height: number;
+  #nodes: SimNode[] = [];
+  #byId = new Map<string, SimNode>();
+  #edges: SimEdge[] = [];
+  #width: number;
+  #height: number;
 
   constructor(width: number, height: number) {
-    this.width = width;
-    this.height = height;
+    this.#width = width;
+    this.#height = height;
   }
 
-  // Adds a node if new, keeping existing positions so live updates don't
-  // scramble the layout.
-  ensureNode(id: string, r: number): SimNode {
-    let n = this.nodes.find((n) => n.id === id);
-    if (!n) {
-      const a = hashSeed(id) * Math.PI * 2;
-      const dist = 60 + hashSeed(id + '#') * 160;
-      n = {
-        id,
-        x: this.width / 2 + Math.cos(a) * dist,
-        y: this.height / 2 + Math.sin(a) * dist,
-        vx: 0,
-        vy: 0,
-        r,
-        pinned: false,
-      };
-      this.nodes.push(n);
-    }
-    n.r = r;
-    return n;
+  get nodes(): ReadonlyArray<Readonly<SimNode>> {
+    return this.#nodes;
   }
 
-  setEdges(pairs: Array<[string, string]>): void {
-    const index = new Map(this.nodes.map((n, i) => [n.id, i]));
-    this.edges = [];
-    for (const [a, b] of pairs) {
-      const i = index.get(a);
-      const j = index.get(b);
-      if (i != null && j != null && i !== j) this.edges.push({ from: i, to: j });
+  // Describe the whole visible graph. Existing nodes keep their positions
+  // (live updates don't scramble the layout), missing ones are dropped,
+  // new ones are seeded deterministically around the center.
+  setGraph(nodes: Array<{ id: string; r: number }>, edges: Array<[string, string]>): void {
+    const next: SimNode[] = [];
+    const nextById = new Map<string, SimNode>();
+    for (const { id, r } of nodes) {
+      let n = this.#byId.get(id);
+      if (!n) {
+        const a = hashSeed(id) * Math.PI * 2;
+        const dist = 60 + hashSeed(id + '#') * 160;
+        n = {
+          id,
+          x: this.#width / 2 + Math.cos(a) * dist,
+          y: this.#height / 2 + Math.sin(a) * dist,
+          vx: 0,
+          vy: 0,
+          r,
+          pinned: false,
+        };
+      }
+      n.r = r;
+      next.push(n);
+      nextById.set(id, n);
     }
+    this.#nodes = next;
+    this.#byId = nextById;
+    this.#edges = [];
+    for (const [from, to] of edges) {
+      if (from !== to && nextById.has(from) && nextById.has(to)) this.#edges.push({ from, to });
+    }
+  }
+
+  has(id: string): boolean {
+    return this.#byId.has(id);
+  }
+
+  // Move a node (drag, untangle layout); pin freezes it there.
+  place(id: string, x: number, y: number, opts?: { pin?: boolean }): void {
+    const n = this.#byId.get(id);
+    if (!n) return;
+    n.x = x;
+    n.y = y;
+    n.vx = 0;
+    n.vy = 0;
+    if (opts?.pin) n.pinned = true;
+  }
+
+  pin(id: string): void {
+    const n = this.#byId.get(id);
+    if (n) n.pinned = true;
+  }
+
+  release(id: string): void {
+    const n = this.#byId.get(id);
+    if (n) n.pinned = false;
+  }
+
+  resize(width: number, height: number): void {
+    this.#width = width;
+    this.#height = height;
   }
 
   // Returns max node speed this tick (used to detect settling).
   tick(): number {
-    const ns = this.nodes;
+    const ns = this.#nodes;
     for (let i = 0; i < ns.length; i++) {
       for (let j = i + 1; j < ns.length; j++) {
         const a = ns[i];
@@ -105,9 +146,10 @@ export class ForceSim {
       }
     }
 
-    for (const e of this.edges) {
-      const a = ns[e.from];
-      const b = ns[e.to];
+    for (const e of this.#edges) {
+      const a = this.#byId.get(e.from);
+      const b = this.#byId.get(e.to);
+      if (!a || !b) continue;
       const dx = b.x - a.x;
       const dy = b.y - a.y;
       const d = Math.sqrt(dx * dx + dy * dy) || 1;
@@ -120,8 +162,8 @@ export class ForceSim {
       b.vy -= fy;
     }
 
-    const cx = this.width / 2;
-    const cy = this.height / 2;
+    const cx = this.#width / 2;
+    const cy = this.#height / 2;
     let maxSpeed = 0;
     for (const n of ns) {
       if (n.pinned) {
@@ -148,7 +190,7 @@ export class ForceSim {
   }
 
   reheat(): void {
-    for (const n of this.nodes) {
+    for (const n of this.#nodes) {
       n.vx += (hashSeed(n.id + '!') - 0.5) * 4;
       n.vy += (hashSeed(n.id + '?') - 0.5) * 4;
     }
