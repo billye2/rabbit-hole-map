@@ -3,7 +3,7 @@ import * as esbuild from 'esbuild';
 await esbuild.build({
   entryPoints: {
     background: 'src/background.ts',
-    map: 'src/map/map.ts',
+    map: 'src/map/boot.ts',
     popup: 'src/popup/popup.ts',
     options: 'src/options/options.ts',
   },
@@ -24,6 +24,7 @@ await esbuild.build({
     schema: 'src/schema.ts',
     storage: 'src/storage.ts',
     force: 'src/map/force.ts',
+    view: 'src/map/view.ts',
   },
   outdir: 'dist',
   outExtension: { '.js': '.mjs' },

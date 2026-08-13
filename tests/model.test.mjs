@@ -8,7 +8,6 @@ import {
   needsNewSession,
   normalizeUrl,
   shouldTrack,
-  tidyLayout,
   topDomain,
   updateTitle,
 } from '../dist/model.mjs';
@@ -72,41 +71,6 @@ test('longestChain follows time-ordered hops', () => {
   visit('https://c.com/', 'https://b.com/', 20_000);
   visit('https://d.com/', 'https://a.com/', 30_000); // branch, shorter
   assert.equal(longestChain(s), 3);
-});
-
-test('tidyLayout: chains go right, branches get their own rows', () => {
-  const s = createSession(0);
-  const visit = (url, src, t) => applyNavEvent(s, { url, sourceUrl: src, time: t, transition: 'link' });
-  visit('https://a.com/', null, 0);
-  visit('https://b.com/', 'https://a.com/', 1000);
-  visit('https://c.com/', 'https://b.com/', 2000);
-  visit('https://d.com/', 'https://a.com/', 3000); // branch off a
-
-  const g = tidyLayout(s);
-  assert.equal(g['https://a.com/'].col, 0);
-  assert.equal(g['https://b.com/'].col, 1);
-  assert.equal(g['https://c.com/'].col, 2);
-  assert.equal(g['https://d.com/'].col, 1);
-  // the two leaves (c and d) sit on different rows — no overlap
-  assert.notEqual(g['https://c.com/'].row, g['https://d.com/'].row);
-  // no two nodes share a cell
-  const cells = Object.values(g).map((p) => `${p.col}:${p.row}`);
-  assert.equal(new Set(cells).size, cells.length);
-});
-
-test('tidyLayout: separate trees stack without colliding, back-edges cannot cycle', () => {
-  const s = createSession(0);
-  const visit = (url, src, t) => applyNavEvent(s, { url, sourceUrl: src, time: t, transition: 'link' });
-  visit('https://a.com/', null, 0);
-  visit('https://b.com/', 'https://a.com/', 1000);
-  visit('https://a.com/', 'https://b.com/', 5000); // back to a — must not re-parent a under b
-  visit('https://x.com/', null, 9000); // a second root/tree
-
-  const g = tidyLayout(s);
-  assert.equal(g['https://a.com/'].col, 0); // still a root
-  assert.equal(Object.keys(g).length, 3);
-  const cells = Object.values(g).map((p) => `${p.col}:${p.row}`);
-  assert.equal(new Set(cells).size, cells.length);
 });
 
 test('topDomain weighs by visits', () => {
