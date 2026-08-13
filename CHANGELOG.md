@@ -8,6 +8,23 @@ _next_ version first (preview the number with `npm run bump -- --dry`).
 `npm run release` refuses to run without it, and that section becomes the
 GitHub release notes verbatim via `npm run release:publish`.
 
+## [1.2.8] — 2026-08-13
+
+- Replay no longer feeds the rabbit: scrubbing or playing back an old
+  session used to drop carrots and play coin blips for historical pages.
+  Both are now reserved for sites visited live, driven by an explicit
+  "live arrival" signal from storage instead of render-state guesswork
+  (pinned by a new e2e test).
+- Opening the map before browsing no longer risks a doubled first render:
+  the storage layer now waits out the background's write order before
+  announcing a brand-new session.
+- Under the hood, the map's logic moved behind small testable interfaces
+  (rabbit gameplay, session store, force sim, view-state): the unit suite
+  grew 16 → 56 tests — including millisecond-fast coverage of the rabbit's
+  hunger/frenzy/growth rules that previously needed a 3-minute e2e soak —
+  and the architecture is now documented in CONTEXT.md and docs/adr/.
+  No visual changes.
+
 ## [1.2.7] — 2026-08-09
 
 - SEO title: the extension is now "Rabbit Hole Map — Browsing History
