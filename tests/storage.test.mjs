@@ -113,6 +113,39 @@ test('onSession streams content updates; onIndex streams the index', async () =>
   assert.equal(indexes[0][0].id, s.id);
 });
 
+// Live arrival: the store diffs oldValue/newValue inside the change event
+// and names the newly-added nodes. Statelessly — replay and re-renders in
+// the map can never fabricate this signal.
+test('onSession names the newly-added node ids (live arrival)', async () => {
+  const backend = memoryBackend();
+  const store = createSessionStore(backend);
+  const s = demoSession();
+  const deliveries = [];
+  store.onSessionsChanged({ onSession: (x, liveNodeIds) => deliveries.push(liveNodeIds) });
+
+  await store.saveSession(s); // first write: everything is newly-added
+  await flush();
+  assert.deepEqual(deliveries[0], ['https://a.com/', 'https://b.com/']);
+
+  applyNavEvent(s, { url: 'https://c.com/', sourceUrl: 'https://b.com/', time: s.end + 50, transition: 'link' });
+  await store.saveSession(s);
+  await flush();
+  assert.deepEqual(deliveries[1], ['https://c.com/']);
+});
+
+test('a content-only update (title patch) has no live arrivals', async () => {
+  const backend = memoryBackend();
+  const store = createSessionStore(backend);
+  const s = demoSession();
+  await store.saveSession(s);
+  const deliveries = [];
+  store.onSessionsChanged({ onSession: (x, liveNodeIds) => deliveries.push(liveNodeIds) });
+  s.nodes['https://a.com/'].title = 'Alpha, retitled';
+  await store.saveSession(s);
+  await flush();
+  assert.deepEqual(deliveries, [[]]);
+});
+
 // Seeding goes through the same door: what seedRecords writes, the store reads.
 test('seedRecords produces state the store loads as its own', async () => {
   const backend = memoryBackend();

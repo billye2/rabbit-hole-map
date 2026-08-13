@@ -50,8 +50,10 @@ export interface SessionStreamHandlers {
   // The current session was adopted (currentSessionId changed) and its data
   // is loadable — delivery waits out the current-before-data write order.
   onCurrentSession?(session: Session): void;
-  // A session record was written (content update).
-  onSession?(session: Session): void;
+  // A session record was written. liveNodeIds names the nodes added by this
+  // very write (oldValue → newValue diff): the "a site was visited live"
+  // signal — re-renders and replay can never fabricate it.
+  onSession?(session: Session, liveNodeIds: string[]): void;
   onIndex?(index: SessionMeta[]): void;
 }
 
@@ -141,7 +143,11 @@ export function createSessionStore(backend: StorageBackend) {
           pendingCurrentId = null;
           h.onCurrentSession?.(s);
         }
-        h.onSession?.(s);
+        const oldNodes = (ch.oldValue as Session | undefined)?.nodes ?? {};
+        h.onSession?.(
+          s,
+          Object.keys(s.nodes).filter((nodeId) => !(nodeId in oldNodes)),
+        );
       }
       const idx = changes[INDEX_KEY];
       if (idx?.newValue) h.onIndex?.(idx.newValue as SessionMeta[]);

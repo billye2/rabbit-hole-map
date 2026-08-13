@@ -37,10 +37,6 @@ let replayTimer: number | null = null;
 // Nodes that have already popped in — so live updates only bounce newcomers.
 let seenNodeIds = new Set<string>();
 
-// Sound stays disarmed while a session first renders, so opening the map
-// doesn't machine-gun a blip per existing node.
-let soundArmed = false;
-
 // Nodes the USER pinned by dragging (gold ring). Distinct from sim-level
 // pinning, which untangle mode also uses to freeze the tidy layout.
 const userPinned = new Set<string>();
@@ -128,8 +124,6 @@ function rebuild(): void {
   // --- nodes ---
   nodesG.textContent = '';
   nodeEls = new Map();
-  const newIds = nodes.filter((n) => !seenNodeIds.has(n.id)).map((n) => n.id);
-  const newCount = newIds.length;
   const byId = new Map(nodes.map((n) => [n.id, n]));
   for (const n of nodes) {
     const g = document.createElementNS(SVGNS, 'g');
@@ -194,12 +188,6 @@ function rebuild(): void {
     void byId;
   });
 
-  if (soundArmed && newCount > 0) {
-    // A burst of new nodes plays as a rising arpeggio, capped so a giant
-    // update doesn't turn into a slot machine.
-    for (let i = 0; i < Math.min(newCount, 5); i++) setTimeout(playPop, i * 90);
-  }
-
   updateStats(nodes, edges);
   settleTicks = 0;
   if (untangled) {
@@ -210,15 +198,20 @@ function rebuild(): void {
     // the tab is hidden, and unpositioned nodes would all sit at (0,0).
     renderPositions();
   }
+}
 
-  // Every live-added site drops a carrot from its node for the rabbit —
-  // same guard as the coin blips, so opening an old session isn't a feast.
-  if (soundArmed && newIds.length) {
-    const pos = new Map(sim.nodes.map((sn) => [sn.id, sn]));
-    for (const id of newIds.slice(0, 12)) {
-      const p = pos.get(id);
-      if (p) rabbit.dropCarrot(p.x * view.k + view.x, p.y * view.k + view.y);
-    }
+// Live arrivals only — the store names the nodes this very write added, so
+// opening an old session or scrubbing a replay is never a feast.
+function celebrateLiveArrivals(ids: string[]): void {
+  if (replayCutoff != null) return; // replay renders history; it never feeds the rabbit
+  // A burst of new nodes plays as a rising arpeggio, capped so a giant
+  // update doesn't turn into a slot machine.
+  for (let i = 0; i < Math.min(ids.length, 5); i++) setTimeout(playPop, i * 90);
+  // Every live-added site drops a carrot from its node for the rabbit.
+  const pos = new Map(sim.nodes.map((sn) => [sn.id, sn]));
+  for (const id of ids.slice(0, 12)) {
+    const p = pos.get(id);
+    if (p) rabbit.dropCarrot(p.x * view.k + view.x, p.y * view.k + view.y);
   }
 }
 
@@ -568,10 +561,8 @@ async function showSession(id: string | null): Promise<void> {
   renderUntangle();
   view = { x: 0, y: 0, k: 1 };
   applyView();
-  soundArmed = false;
   computeTimeline();
   setReplay(null);
-  soundArmed = true;
 }
 
 sessionSelect.addEventListener('change', () => showSession(sessionSelect.value));
@@ -584,11 +575,12 @@ store.onSessionsChanged({
     if (session) return;
     void loadSessionList(s.id).then(() => showSession(s.id));
   },
-  onSession: (s) => {
+  onSession: (s, liveNodeIds) => {
     if (!session || s.id !== session.id) return;
     session = s;
     computeTimeline();
     if (replayCutoff == null) rebuild(); // don't yank the user out of a replay
+    if (liveNodeIds.length) celebrateLiveArrivals(liveNodeIds);
   },
   onIndex: () => {
     if (session) void loadSessionList(session.id);

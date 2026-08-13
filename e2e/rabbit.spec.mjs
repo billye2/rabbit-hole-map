@@ -1,4 +1,5 @@
 import { test, expect, openMap } from './fixtures.mjs';
+import { seedFixedSession } from './visual-session.mjs';
 
 const rabbitScale = (map) =>
   map.evaluate(() => {
@@ -35,6 +36,17 @@ test('a live-added site drops a carrot and the rabbit eats it', async ({ context
   await page.goto(site + '/e'); // background tab; map keeps focus + rAF
   await expect(map.locator('#burrow-layer .carrot')).not.toHaveCount(0, { timeout: 8000 });
   await expect(map.locator('#burrow-layer .carrot')).toHaveCount(0, { timeout: 15000 });
+});
+
+test('replaying an old session drops no carrots: history is not a feast', async ({ context, extensionId }) => {
+  const map = await openMap(context, extensionId);
+  await seedFixedSession(map);
+  await map.reload();
+  await expect(map.locator('#nodes .node')).not.toHaveCount(0);
+
+  await map.click('#replay-play'); // start over: nodes pop back in one by one
+  await map.waitForTimeout(2500); // a few replay hops at 650ms each
+  await expect(map.locator('#burrow-layer .carrot')).toHaveCount(0);
 });
 
 test('the 5th carrot triggers a monster feeding frenzy and +25% growth', async ({ context, extensionId, site }) => {
