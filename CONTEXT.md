@@ -20,7 +20,7 @@ thing by them. Architectural decisions behind these terms live in
   through its doors.
 - **Live Arrival** — the fact that a site was visited _just now_, named by
   the Session Store's change stream as the node ids a write added
-  (ADR-0007). Coin blips and carrot drops key off this signal alone;
+  (ADR-0007). Coin blips and crate drops key off this signal alone;
   re-renders and replay can never fabricate it.
 
 ## Map page
@@ -46,14 +46,21 @@ thing by them. Architectural decisions behind these terms live in
   and viewport injected. `rabbit.ts` is its **paint adapter**: it feeds
   each animation frame in, plays the step's events, and projects state
   onto SVG.
-- **Carrot** — dropped from a live-arrived site's node; eaten in 3 bites.
-- **Milestone / Stage** — carrot counts (5/10/20/40/60) that grow the
+- **Crate** — dropped from a live-arrived site's node; cranked open in 3
+  clanks. Its **Tier** (1–5: Wooden/Iron/Gold/Energy/Plasma) is stamped
+  from the phase at drop time — one above the current phase, capped at 5 —
+  and never changes afterward.
+- **Milestone / Phase** — crate counts (5/10/20/40/60) that grow the
   rabbit +25%, compounding on its _current_ size (hunger shrink carries
-  forward — the growth rule is path-dependent).
-- **Frenzy** — the 10-second monster form a milestone unleashes: fangs,
-  red eyes, double-speed hops and bites, no startle pause.
-- **Hunger** — 30 seconds unfed shrinks the rabbit 10%, never below its
-  original size.
+  forward — the growth rule is path-dependent). Each phase bolts a new
+  piece of mechanical armor onto the rabbit, permanently: ear plating,
+  chest plate + core, visor, thrusters, full plating + antenna.
+- **Overdrive** — the 10-second surge a milestone triggers: red eye/visor,
+  energy aura, thruster flames, double-speed hops and cranks, no startle
+  pause.
+- **Hunger** — 30 seconds unfed shrinks the rabbit 10% (`powerdown`),
+  never below its original size. Armor never comes off: phase derives
+  from crates opened, which only grows.
 
 ## Test seam
 

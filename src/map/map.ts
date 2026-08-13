@@ -23,7 +23,7 @@ export function main(): void {
 
   const SVGNS = 'http://www.w3.org/2000/svg';
 
-  // The roaming rabbit + carrot ground layer (screen-space, above the graph).
+  // The roaming rabbit + crate ground layer (screen-space, above the graph).
   const rabbit = initRabbit(svg);
 
   let session: Session | null = null;
@@ -209,11 +209,11 @@ export function main(): void {
     // A burst of new nodes plays as a rising arpeggio, capped so a giant
     // update doesn't turn into a slot machine.
     for (let i = 0; i < Math.min(ids.length, 5); i++) setTimeout(playPop, i * 90);
-    // Every live-added site drops a carrot from its node for the rabbit.
+    // Every live-added site drops a crate from its node for the rabbit.
     const pos = new Map(sim.nodes.map((sn) => [sn.id, sn]));
     for (const id of ids.slice(0, 12)) {
       const p = pos.get(id);
-      if (p) rabbit.dropCarrot(p.x * view.k + view.x, p.y * view.k + view.y);
+      if (p) rabbit.dropCrate(p.x * view.k + view.x, p.y * view.k + view.y);
     }
   }
 

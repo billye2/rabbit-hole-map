@@ -8,7 +8,7 @@ import { seedFixedSession } from './visual-session.mjs';
 
 test.skip(!!process.env.CI, 'darwin-only baselines — run locally before release');
 
-// The rabbit + carrots (#burrow-layer) are JS-animated from rAF and ROAM —
+// The rabbit + crates (#burrow-layer) are JS-animated from rAF and ROAM —
 // a mask would follow their moving bounding box and flake, so the layer is
 // hidden outright. CSS animations (clouds, empty-state hop) are disabled by
 // config.

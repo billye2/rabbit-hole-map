@@ -33,7 +33,7 @@ them:
   hole" doesn't blur into "this morning's".
 - **Replay** — scrub or play the trail back in chronological order; a full
   replay re-bounces every node. Replay is a picture of history: coin blips
-  and rabbit carrots stay reserved for sites you visit live.
+  and rabbit crates stay reserved for sites you visit live.
 - **Drag to pin** — drag a node and it stays exactly where you dropped it
   (gold ring); the physics settles around your arrangement. ⌥-click releases
   a pinned node back to the simulation.
@@ -42,15 +42,20 @@ them:
   view auto-zooms to fit. No more hairball on 50-page nights. Click again
   to hand the map back to the physics.
 - **Double-click a node** to reopen that page in a new tab.
-- **A resident rabbit** roams the grass at the bottom of the map. Every site
-  you visit live drops a carrot from its node; the rabbit startles (❗),
-  chases it down, and nibbles it gone. It **grows +25%** at 5, 10, 20, 40,
-  and 60 carrots eaten, and eats 1.5× faster from the first milestone on.
-  Hitting a milestone unleashes a **10-second monster feeding frenzy** —
-  red eyes, fangs, dark aura, a roar — as it rampages at double speed until
-  every carrot on the ground is gone, then reverts to its cute (bigger)
-  self. Go 30 seconds without feeding it and hunger shrinks it 10% at a
-  time, back down to — but never below — its original size.
+- **A resident mech rabbit** roams the grass at the bottom of the map. Every
+  site you visit live drops a supply crate from its node; the rabbit
+  startles (❗), chases it down, and cranks it open in three clanks. It
+  **grows +25%** at 5, 10, 20, 40, and 60 crates opened — and each of those
+  milestones **bolts on a new piece of mechanical armor**, permanently: ear
+  plating, a chest plate with a glowing core, a cyan visor, back thrusters,
+  and finally full plating with a beacon antenna. Crates level up alongside
+  it — Wooden → Iron → Gold → Energy → Plasma — so the loot on the ground
+  evolves with the rabbit. Hitting a milestone also triggers a **10-second
+  overdrive** — red visor, energy aura, thruster flames, a servo power-up
+  chord — as it rampages at double speed until every crate on the ground is
+  gone. Go 30 seconds without feeding it and low fuel shrinks it 10% at a
+  time, back down to — but never below — its original size (the armor
+  stays on).
 - **Speech-bubble tooltips** on every map control, with state-aware text
   (the popup keeps its single button self-explanatory, no bubble).
 - **Export PNG** — share the constellation (pinned rings and all).
@@ -105,7 +110,7 @@ The e2e suite (`e2e/*.spec.mjs`, `@playwright/test`) loads the unpacked
 extension into Playwright's own Chromium — no manual browser wrangling —
 and covers tracking (click chains, cross-tab hops, fragment normalization,
 reload behavior), the map (render, double-click reopen, drag-to-pin,
-alt-click release, tooltips), untangle, the rabbit (roam, carrot drop, eat,
+alt-click release, tooltips), untangle, the rabbit (roam, crate drop, open,
 growth milestone), sessions (live pickup from the empty state, blocklist via
 the real Options UI, clear-all-data), and popup scoreboard accuracy. Both
 suites run in CI on every push (`.github/workflows/ci.yml`), with Playwright

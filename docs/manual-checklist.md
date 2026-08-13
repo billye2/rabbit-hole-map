@@ -33,9 +33,10 @@ sweep this before every store upload.
 
 ## Rabbit
 
-- [ ] Rabbit roams the grass; a live-visited site drops a carrot from its node; rabbit alerts (❗), chases, eats it in three nibbles
-- [ ] 5th carrot → 10-second monster frenzy (red eyes, fangs, aura, roar, double speed), then reverts to a bigger cute rabbit (+25%)
-- [ ] No carrots for 30s → rabbit shrinks 10% at a time, never below original size; eating resets the clock
+- [ ] Rabbit roams the grass; a live-visited site drops a crate from its node; rabbit alerts (❗), chases, cranks it open in three clanks
+- [ ] 5th crate → 10-second overdrive (red eye, energy aura, servo power-up, double speed), then it calms down bigger (+25%) with ear plating bolted on — armor stays after overdrive ends
+- [ ] After the 5th crate, new drops are Iron crates (steel-blue) instead of Wooden (brown) — a crate already on the ground keeps its old look
+- [ ] No crates for 30s → rabbit shrinks 10% at a time, never below original size; opening a crate resets the clock (armor never comes off)
 
 ## Popup & housekeeping
 

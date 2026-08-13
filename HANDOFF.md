@@ -6,7 +6,7 @@ here — it goes stale).
 
 ## Status
 
-**Store-ready.** All tests green: 56 unit tests (`npm test`) and 24
+**Store-ready.** All tests green: 59 unit tests (`npm test`) and 24
 Playwright e2e tests (`npm run e2e`), plus `npm run lint`
 (eslint + prettier), all enforced by GitHub Actions CI on every push. The
 complete Web Store submission package exists: the latest
@@ -65,7 +65,7 @@ Codebase notes that aren't ADRs:
   settles. Pin state lives only in the in-page sim — it does not survive a
   page reload. That's a known acceptable gap.
 - **Sound** (`src/map/audio.ts`): Web Audio square-wave "coin" blips climbing
-  a pentatonic scale; combo resets after 2s of quiet. Blips and carrots play
+  a pentatonic scale; combo resets after 2s of quiet. Blips and crates play
   only for live arrivals (ADR-0007). Mute persists in the map page's
   `localStorage` (`rhm-muted`).
 - **Untangle mode** (`view.ts#tidyLayout` + `untanglePositions`): parent =
@@ -79,18 +79,23 @@ Codebase notes that aren't ADRs:
   (`gen-icons.mjs` — it replaced a hand-rolled analytic PNG encoder with
   identical geometry). The store icon and promo tiles derive from it —
   regenerate assets after icon changes.
-- **The rabbit**: behaviour is the pure Gameplay Step
+- **The mech rabbit**: behaviour is the pure Gameplay Step
   (`src/map/gameplay.ts`, `stepRabbit(state, input) → {state, events}` with
   clock/rng/viewport injected); `src/map/rabbit.ts` is the paint adapter
   that ticks it from the map's rAF loop, plays its events, and draws the
-  SVG. Live-arrived sites drop carrots. Growth: +25% per milestone
-  (5/10/20/40/60 eaten), compounding on the rabbit's _current_ size —
-  hunger shrink (-10% per 30s unfed, floors at 1.0) carries forward, so
-  the rule is path-dependent. A milestone triggers a 10s monster frenzy
-  (fangs/red eyes/aura, 2x hops and bites, no alert pause). Chase locks
-  ONE carrot and arrives by distance tolerance — never a facing-dependent
-  point (regression: dithering between close carrots). Progress is
-  per-page-load by design.
+  SVG. Live-arrived sites drop crates, cranked open in 3 clanks. Growth:
+  +25% per milestone (5/10/20/40/60 opened), compounding on the rabbit's
+  _current_ size — hunger shrink (-10% per 30s unfed, floors at 1.0)
+  carries forward, so the rule is path-dependent. Each milestone is an
+  armor **phase** that bolts a permanent piece onto the sprite (ear
+  plating → chest plate → visor → thrusters → full plating + antenna) and
+  triggers a 10s **overdrive** (red eye/visor, energy aura, flames, 2x
+  hops and cranks, no alert pause). Newly dropped crates carry a **tier**
+  (1–5, Wooden→Plasma) stamped one above the current phase, capped — a
+  crate keeps its tier for life, so mixed tiers can share the ground near
+  a boundary. Chase locks ONE crate and arrives by distance tolerance —
+  never a facing-dependent point (regression: dithering between close
+  crates). Progress is per-page-load by design.
 
 ## Known quirks / bugs already fixed once (don't regress)
 
@@ -176,6 +181,9 @@ harness has caught five real bugs so far — extend it with every feature.
 - Upload the promo video to YouTube and paste the URL into
   `docs/STORE_LISTING.md` (the video itself exists:
   `marketing/store/promo-video.webm`, regenerated via `npm run assets:video`).
+- Regenerate `marketing/store/` before the next store upload: the current
+  screenshots and promo video predate the mech-rabbit theme and still show
+  carrots (`npm run assets` / `npm run assets:video`).
 - Persist pinned positions and untangle state per session (both currently
   reset on page reload / session switch).
 - Parked refactors from the 2026-08-13 architecture review: keyed DOM

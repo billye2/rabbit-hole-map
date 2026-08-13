@@ -8,6 +8,25 @@ _next_ version first (preview the number with `npm run bump -- --dry`).
 `npm run release` refuses to run without it, and that section becomes the
 GitHub release notes verbatim via `npm run release:publish`.
 
+## [1.2.9] — 2026-08-13
+
+- **The rabbit went mech.** Live-visited sites now drop supply crates
+  instead of carrots; the rabbit cranks them open in three metallic clanks.
+  Each growth milestone (5/10/20/40/60 opened) bolts a permanent piece of
+  mechanical armor onto the sprite — ear plating, a chest plate with a
+  glowing core, a cyan visor, back thrusters, and full plating with a
+  beacon antenna — and triggers a 10-second **overdrive** (red eye/visor,
+  pulsing energy aura, thruster flames, double-speed everything), replacing
+  the old fanged monster frenzy.
+- **Crate tiers.** Crates level up with the rabbit: Wooden → Iron → Gold →
+  Energy → Plasma, stepping at each milestone and capped at Plasma. A
+  crate's tier is stamped when it drops and never changes, so crates from
+  before a milestone keep their old look on the ground.
+- New synth sounds to match (still zero audio assets): wrench clanks for
+  cranking, a servo spin-up + ding for a new armor phase, and a robotic
+  power-down sigh for hunger. Growth math, hunger decay, and the
+  live-arrival rules are unchanged.
+
 ## [1.2.8] — 2026-08-13
 
 - Replay no longer feeds the rabbit: scrubbing or playing back an old

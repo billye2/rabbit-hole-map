@@ -1,5 +1,5 @@
-// The burrow layer: a rabbit that roams the bottom of the map, plus the
-// carrots that drop from freshly-visited sites. Lives in SCREEN space (a
+// The burrow layer: a mech rabbit that roams the bottom of the map, plus
+// the crates that drop from freshly-visited sites. Lives in SCREEN space (a
 // sibling of #viewport), so panning/zooming the graph never moves the
 // ground. Everything uses attribute fills — no CSS — so the PNG export's
 // SVG-clone path renders it as-is.
@@ -9,7 +9,7 @@
 // projects the resulting RabbitState onto SVG attributes. All behaviour
 // decisions live in gameplay.ts.
 import {
-  BITES,
+  CRANKS,
   GROUND_LIFT,
   displaySize,
   initialRabbitState,
@@ -18,7 +18,7 @@ import {
   type RabbitState,
   type Viewport,
 } from './gameplay.js';
-import { playNibble, playRoar, playShrink } from './audio.js';
+import { playClank, playPowerup, playPowerdown } from './audio.js';
 
 const SVGNS = 'http://www.w3.org/2000/svg';
 const NAVY = '#2b2857';
@@ -26,12 +26,29 @@ const WHITE = '#ffffff';
 const PINK = '#ff9eb5';
 const ORANGE = '#ff9f1c';
 const LEAF = '#06d6a0';
-const MONSTER_RED = '#ff2244';
-const AURA = '#6b21a8';
+const MECH_RED = '#ff2244';
+const STEEL = '#b8c4d9';
+const STEEL_DARK = '#7d8aa5';
+const GOLD = '#ffd166';
+const GOLD_DARK = '#d9a520';
+const ENERGY = '#00e5ff';
+const PLASMA = '#ff2bd6';
+const PLASMA_DARK = '#6b21a8';
+const WOOD = '#b07d3f';
+const WOOD_DARK = '#8a5a2b';
+
+// Crate looks per tier: Wooden, Iron, Gold, Energy, Plasma.
+const TIER_STYLES = [
+  { body: WOOD, brace: WOOD_DARK, latch: WOOD_DARK },
+  { body: STEEL, brace: STEEL_DARK, latch: NAVY },
+  { body: GOLD, brace: GOLD_DARK, latch: WHITE },
+  { body: NAVY, brace: ENERGY, latch: ENERGY },
+  { body: PLASMA_DARK, brace: PLASMA, latch: PLASMA },
+];
 
 export interface RabbitLayer {
   tick(now: number): void;
-  dropCarrot(screenX: number, screenY: number): void;
+  dropCrate(screenX: number, screenY: number): void;
   resize(): void;
 }
 
@@ -51,49 +68,104 @@ interface RabbitParts {
   squash: SVGGElement;
   bubble: SVGGElement;
   eye: SVGCircleElement;
-  innerEars: SVGRectElement[];
   aura: SVGEllipseElement;
-  fangs: SVGPathElement;
+  armorGroups: SVGGElement[];
+  visor: SVGRectElement;
+  flames: SVGPathElement;
+  antennaTip: SVGCircleElement;
 }
 
 function buildRabbit(parent: SVGGElement): RabbitParts {
   const root = el('g', { class: 'rabbit' }, parent);
   const squash = el('g', {}, root);
   // Origin is the rabbit's ground contact point; the sprite is drawn upward.
-  // Dark aura behind everything — invisible until frenzy.
-  const aura = el('ellipse', { class: 'aura', cx: 2, cy: -22, rx: 34, ry: 32, fill: AURA, opacity: 0 }, squash);
+  // Energy aura behind everything — invisible until overdrive.
+  const aura = el('ellipse', { class: 'aura', cx: 2, cy: -22, rx: 34, ry: 32, fill: ENERGY, opacity: 0 }, squash);
   el('circle', { cx: -15, cy: -12, r: 5, fill: WHITE }, squash); // tail
   el('ellipse', { cx: 0, cy: -13, rx: 16, ry: 12, fill: WHITE }, squash); // body
   // ears (behind the head), slightly splayed
   el('rect', { x: 3, y: -55, width: 7, height: 24, rx: 3.5, fill: WHITE, transform: 'rotate(-8 6.5 -43)' }, squash);
   el('rect', { x: 13, y: -54, width: 7, height: 24, rx: 3.5, fill: WHITE, transform: 'rotate(8 16.5 -42)' }, squash);
-  const earL = el(
-    'rect',
-    { x: 5, y: -52, width: 3, height: 17, rx: 1.5, fill: PINK, transform: 'rotate(-8 6.5 -43)' },
-    squash,
-  );
-  const earR = el(
-    'rect',
-    { x: 15, y: -51, width: 3, height: 17, rx: 1.5, fill: PINK, transform: 'rotate(8 16.5 -42)' },
-    squash,
-  );
+  el('rect', { x: 5, y: -52, width: 3, height: 17, rx: 1.5, fill: PINK, transform: 'rotate(-8 6.5 -43)' }, squash);
+  el('rect', { x: 15, y: -51, width: 3, height: 17, rx: 1.5, fill: PINK, transform: 'rotate(8 16.5 -42)' }, squash);
   el('circle', { cx: 10, cy: -27, r: 10.5, fill: WHITE }, squash); // head
   const eye = el('circle', { class: 'eye', cx: 13, cy: -29, r: 1.7, fill: NAVY }, squash); // eye
   el('circle', { cx: 20, cy: -26, r: 1.8, fill: PINK }, squash); // nose
-  // fangs — hidden until frenzy
-  const fangs = el(
+  el('ellipse', { cx: 8, cy: -2.5, rx: 6, ry: 2.5, fill: WHITE }, squash); // front paw
+
+  // Armor: one <g> per phase, bolted on cumulatively — armor-N appears at
+  // phase N and stays (phase never decreases; it derives from crates opened).
+  const armorGroups: SVGGElement[] = [];
+  const armor = (n: number): SVGGElement => {
+    const g = el('g', { class: `armor armor-${n}`, visibility: 'hidden' }, squash);
+    armorGroups.push(g);
+    return g;
+  };
+
+  // Phase 1: ear plating + rivets, reusing the exact ear transforms.
+  const a1 = armor(1);
+  const earPlateL = el('g', { transform: 'rotate(-8 6.5 -43)' }, a1);
+  el(
+    'rect',
+    { x: 3.5, y: -54.5, width: 6, height: 14, rx: 3, fill: STEEL, stroke: STEEL_DARK, 'stroke-width': 0.8 },
+    earPlateL,
+  );
+  el('circle', { cx: 6.5, cy: -47.5, r: 0.8, fill: STEEL_DARK }, earPlateL);
+  const earPlateR = el('g', { transform: 'rotate(8 16.5 -42)' }, a1);
+  el(
+    'rect',
+    { x: 13.5, y: -53.5, width: 6, height: 14, rx: 3, fill: STEEL, stroke: STEEL_DARK, 'stroke-width': 0.8 },
+    earPlateR,
+  );
+  el('circle', { cx: 16.5, cy: -46.5, r: 0.8, fill: STEEL_DARK }, earPlateR);
+
+  // Phase 2: chest plate with a glowing core.
+  const a2 = armor(2);
+  el('ellipse', { cx: 2, cy: -11, rx: 11, ry: 8, fill: STEEL, stroke: STEEL_DARK, 'stroke-width': 1 }, a2);
+  el('circle', { cx: -6, cy: -13, r: 0.8, fill: STEEL_DARK }, a2); // bolt
+  el('circle', { cx: 10, cy: -13, r: 0.8, fill: STEEL_DARK }, a2); // bolt
+  el('circle', { class: 'core', cx: 2, cy: -13, r: 2.5, fill: ENERGY }, a2);
+
+  // Phase 3: cyan visor over the eye (overdrive recolors it).
+  const a3 = armor(3);
+  const visor = el(
+    'rect',
+    {
+      class: 'visor',
+      x: 8,
+      y: -33,
+      width: 12,
+      height: 7,
+      rx: 3,
+      fill: ENERGY,
+      stroke: STEEL_DARK,
+      'stroke-width': 0.8,
+      opacity: 0.9,
+    },
+    a3,
+  );
+
+  // Phase 4: back thrusters; flames only show during overdrive.
+  const a4 = armor(4);
+  el('rect', { x: -21, y: -26, width: 6, height: 12, rx: 2, fill: STEEL_DARK }, a4);
+  el('rect', { x: -15, y: -30, width: 5, height: 10, rx: 2, fill: STEEL_DARK }, a4);
+  const flames = el(
     'path',
     {
-      class: 'fangs',
-      d: 'M 12 -17.5 l 2.4 5.5 l 2.4 -5.5 z M 5.5 -17.5 l 2.4 5.5 l 2.4 -5.5 z',
-      fill: WHITE,
-      stroke: NAVY,
-      'stroke-width': 0.9,
+      class: 'flames',
+      d: 'M -20.5 -13 l 2.5 7 l 2.5 -7 z M -14.5 -19 l 2 6 l 2 -6 z',
+      fill: ORANGE,
       visibility: 'hidden',
     },
-    squash,
+    a4,
   );
-  el('ellipse', { cx: 8, cy: -2.5, rx: 6, ry: 2.5, fill: WHITE }, squash); // front paw
+
+  // Phase 5: head dome + paw guard + antenna with a glowing tip.
+  const a5 = armor(5);
+  el('ellipse', { cx: 10, cy: -32, rx: 10, ry: 6, fill: STEEL, stroke: STEEL_DARK, 'stroke-width': 1 }, a5);
+  el('ellipse', { cx: 8, cy: -2.5, rx: 6.5, ry: 2.8, fill: STEEL, stroke: STEEL_DARK, 'stroke-width': 0.8 }, a5);
+  el('rect', { x: 9.4, y: -46, width: 1.2, height: 9, fill: STEEL_DARK }, a5);
+  const antennaTip = el('circle', { class: 'antenna-tip', cx: 10, cy: -47, r: 1.8, fill: ENERGY }, a5);
 
   // "!" alert bubble
   const bubble = el('g', { class: 'alert-bubble', visibility: 'hidden' }, root);
@@ -111,33 +183,50 @@ function buildRabbit(parent: SVGGElement): RabbitParts {
     },
     bubble,
   ).textContent = '!';
-  return { root, squash, bubble, eye, innerEars: [earL, earR], aura, fangs };
+  return { root, squash, bubble, eye, aura, armorGroups, visor, flames, antennaTip };
 }
 
-function buildCarrot(parent: SVGGElement): { el: SVGGElement; scaleEl: SVGGElement } {
-  const root = el('g', { class: 'carrot' }, parent);
+function buildCrate(parent: SVGGElement, tier: number): { el: SVGGElement; scaleEl: SVGGElement } {
+  const style = TIER_STYLES[Math.max(1, Math.min(tier, TIER_STYLES.length)) - 1];
+  const root = el('g', { class: `crate tier-${tier}` }, parent);
   const scaleEl = el('g', {}, root);
-  el('path', { d: 'M -5.5 0 L 5.5 0 L 0 17 Z', fill: ORANGE }, scaleEl); // body, tip down
-  el('ellipse', { cx: -3, cy: -4, rx: 3, ry: 5.5, fill: LEAF, transform: 'rotate(-24 -3 -4)' }, scaleEl);
-  el('ellipse', { cx: 3, cy: -4, rx: 3, ry: 5.5, fill: LEAF, transform: 'rotate(24 3 -4)' }, scaleEl);
-  el('ellipse', { cx: 0, cy: -5.5, rx: 2.6, ry: 6, fill: LEAF }, scaleEl);
+  // Drawn below the origin so the base (17px down) rests on the grass —
+  // gameplay's landing constant assumes this.
+  el(
+    'rect',
+    { x: -8, y: 1, width: 16, height: 16, rx: 2, fill: style.body, stroke: style.brace, 'stroke-width': 1 },
+    scaleEl,
+  );
+  el('line', { x1: -8, y1: 1, x2: 8, y2: 17, stroke: style.brace, 'stroke-width': 1.6 }, scaleEl);
+  el('line', { x1: 8, y1: 1, x2: -8, y2: 17, stroke: style.brace, 'stroke-width': 1.6 }, scaleEl);
+  if (tier === 3) {
+    // The gold crate gets a star latch.
+    el(
+      'path',
+      { d: 'M 0 5.5 L 1.1 7.9 L 3.5 9 L 1.1 10.1 L 0 12.5 L -1.1 10.1 L -3.5 9 L -1.1 7.9 Z', fill: style.latch },
+      scaleEl,
+    );
+  } else {
+    el('circle', { cx: 0, cy: 9, r: 2.2, fill: style.latch }, scaleEl);
+  }
   return { el: root, scaleEl };
 }
 
 export function initRabbit(svg: SVGSVGElement): RabbitLayer {
   const layer = el('g', { id: 'burrow-layer', 'pointer-events': 'none' }, svg as unknown as SVGGElement);
   const ground = el('rect', { x: -20, y: 0, width: 40, height: 26, rx: 12, fill: LEAF, opacity: 0.35 }, layer);
-  const carrotG = el('g', {}, layer);
-  const { root: rabbitEl, squash, bubble, eye, innerEars, aura, fangs } = buildRabbit(layer);
+  const crateG = el('g', {}, layer);
+  const { root: rabbitEl, squash, bubble, eye, aura, armorGroups, visor, flames, antennaTip } = buildRabbit(layer);
 
   const viewport = (): Viewport => ({ width: window.innerWidth, height: window.innerHeight });
   let state: RabbitState = initialRabbitState(viewport());
   let pendingDrops: { x: number; y: number }[] = [];
-  const carrotEls = new Map<number, { el: SVGGElement; scaleEl: SVGGElement; paintedBites: number }>();
-  let paintedMonster = false;
+  const crateEls = new Map<number, { el: SVGGElement; scaleEl: SVGGElement; paintedCranks: number }>();
+  let paintedPhase = -1;
+  let paintedOverdrive = false;
   let paintedAlert = false;
 
-  const SOUNDS: Record<GameEvent, () => void> = { nibble: playNibble, roar: playRoar, shrink: playShrink };
+  const SOUNDS: Record<GameEvent, () => void> = { clank: playClank, powerup: playPowerup, powerdown: playPowerdown };
 
   function layoutGround(): void {
     ground.setAttribute('x', '-20');
@@ -146,36 +235,41 @@ export function initRabbit(svg: SVGSVGElement): RabbitLayer {
   }
   layoutGround();
 
-  function setMonster(on: boolean): void {
-    eye.setAttribute('fill', on ? MONSTER_RED : NAVY);
+  function setArmor(phase: number): void {
+    armorGroups.forEach((g, i) => g.setAttribute('visibility', i < phase ? 'visible' : 'hidden'));
+  }
+
+  function setOverdrive(on: boolean): void {
+    eye.setAttribute('fill', on ? MECH_RED : NAVY);
     eye.setAttribute('r', on ? '2.6' : '1.7');
-    fangs.setAttribute('visibility', on ? 'visible' : 'hidden');
-    for (const e of innerEars) e.setAttribute('fill', on ? MONSTER_RED : PINK);
+    visor.setAttribute('fill', on ? MECH_RED : ENERGY);
+    flames.setAttribute('visibility', on ? 'visible' : 'hidden');
     aura.setAttribute('opacity', on ? '0.3' : '0');
   }
 
   function paint(now: number): void {
-    // Carrots: keyed by id — create, update, and remove to match the state.
+    // Crates: keyed by id — create, update, and remove to match the state.
+    // Tier is stamped at drop time, so a crate's look never needs repainting.
     const alive = new Set<number>();
-    for (const c of state.carrots) {
+    for (const c of state.crates) {
       alive.add(c.id);
-      let entry = carrotEls.get(c.id);
+      let entry = crateEls.get(c.id);
       if (!entry) {
-        entry = { ...buildCarrot(carrotG), paintedBites: -1 };
-        carrotEls.set(c.id, entry);
+        entry = { ...buildCrate(crateG, c.tier), paintedCranks: -1 };
+        crateEls.set(c.id, entry);
       }
       entry.el.setAttribute('transform', `translate(${c.x},${c.y}) rotate(${c.rot})`);
-      if (c.bites !== entry.paintedBites) {
-        entry.paintedBites = c.bites;
-        const s = Math.max(0, 1 - c.bites / BITES);
+      if (c.cranks !== entry.paintedCranks) {
+        entry.paintedCranks = c.cranks;
+        const s = Math.max(0, 1 - c.cranks / CRANKS);
         entry.scaleEl.setAttribute('transform', `scale(${0.4 + 0.6 * s})`);
         entry.scaleEl.setAttribute('opacity', String(0.3 + 0.7 * s));
       }
     }
-    for (const [id, entry] of carrotEls) {
+    for (const [id, entry] of crateEls) {
       if (!alive.has(id)) {
         entry.el.remove();
-        carrotEls.delete(id);
+        crateEls.delete(id);
       }
     }
 
@@ -185,15 +279,24 @@ export function initRabbit(svg: SVGSVGElement): RabbitLayer {
       bubble.setAttribute('visibility', alertOn ? 'visible' : 'hidden');
     }
 
-    const monsterOn = now < state.frenzyUntil;
-    if (monsterOn !== paintedMonster) {
-      paintedMonster = monsterOn;
-      setMonster(monsterOn);
+    if (state.phase !== paintedPhase) {
+      paintedPhase = state.phase;
+      setArmor(state.phase);
     }
-    if (monsterOn) {
-      // Pulsing dark aura while the monster is out.
+
+    const overdriveOn = now < state.overdriveUntil;
+    if (overdriveOn !== paintedOverdrive) {
+      paintedOverdrive = overdriveOn;
+      setOverdrive(overdriveOn);
+    }
+    if (overdriveOn) {
+      // Pulsing energy aura while overdrive is hot.
       aura.setAttribute('rx', String(34 + Math.sin(now / 110) * 5));
       aura.setAttribute('ry', String(32 + Math.cos(now / 130) * 4));
+    }
+    if (state.phase >= 5) {
+      // The full-mech antenna beacon breathes.
+      antennaTip.setAttribute('opacity', String(0.6 + 0.4 * Math.sin(now / 150)));
     }
 
     const gy = window.innerHeight - GROUND_LIFT;
@@ -213,7 +316,7 @@ export function initRabbit(svg: SVGSVGElement): RabbitLayer {
     paint(now);
   }
 
-  function dropCarrot(screenX: number, screenY: number): void {
+  function dropCrate(screenX: number, screenY: number): void {
     pendingDrops.push({ x: screenX, y: screenY });
   }
 
@@ -221,5 +324,5 @@ export function initRabbit(svg: SVGSVGElement): RabbitLayer {
     layoutGround();
   }
 
-  return { tick, dropCarrot, resize };
+  return { tick, dropCrate, resize };
 }

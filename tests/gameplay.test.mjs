@@ -3,10 +3,11 @@ import assert from 'node:assert/strict';
 import {
   GROUND_LIFT,
   HUNGER_INTERVAL_MS,
+  crateTier,
   displaySize,
   hungerShrink,
   initialRabbitState,
-  rabbitStages,
+  mechPhase,
   stepRabbit,
 } from '../dist/gameplay.mjs';
 
@@ -14,29 +15,29 @@ const VIEW = { width: 1000, height: 600 };
 const GROUND_Y = VIEW.height - GROUND_LIFT;
 const input = (now, over = {}) => ({ now, rng: () => 0.5, viewport: VIEW, drops: [], ...over });
 
-// A landed carrot sitting at screen-x `x`, ready to be chased or eaten.
-const landedCarrot = (id, x) => ({ id, x, y: GROUND_Y - 18, vy: 0, rot: 0, vrot: 0, landed: true, bites: 0 });
+// A landed crate sitting at screen-x `x`, ready to be chased or cranked open.
+const landedCrate = (id, x) => ({ id, x, y: GROUND_Y - 18, vy: 0, rot: 0, vrot: 0, landed: true, cranks: 0, tier: 1 });
 
 test('initial rabbit idles at 30% of the viewport width', () => {
   const s = initialRabbitState(VIEW);
   assert.equal(s.mode, 'idle');
   assert.equal(s.x, VIEW.width * 0.3);
   assert.equal(s.sizeScale, 1);
-  assert.equal(s.eaten, 0);
+  assert.equal(s.opened, 0);
 });
 
-test('a dropped carrot falls, lands tip-down on the grass, and startles the rabbit', () => {
+test('a dropped crate falls, lands base-down on the grass, and startles the rabbit', () => {
   let s = { ...initialRabbitState(VIEW), modeUntil: Infinity }; // rest forever: isolate the drop
   let r = stepRabbit(s, input(1000, { drops: [{ x: 500, y: 100 }] }));
-  assert.equal(r.state.carrots.length, 1);
-  assert.equal(r.state.carrots[0].landed, false);
+  assert.equal(r.state.crates.length, 1);
+  assert.equal(r.state.crates[0].landed, false);
   let t = 1000;
-  while (!r.state.carrots[0].landed && t < 30_000) {
+  while (!r.state.crates[0].landed && t < 30_000) {
     t += 16;
     r = stepRabbit(r.state, input(t));
   }
-  assert.equal(r.state.carrots[0].landed, true);
-  assert.equal(r.state.carrots[0].y, GROUND_Y - 18); // tip (17px below origin) rests on the grass
+  assert.equal(r.state.crates[0].landed, true);
+  assert.equal(r.state.crates[0].y, GROUND_Y - 18); // base (17px below origin) rests on the grass
   assert.equal(r.state.mode, 'alert'); // "!" moment before the chase
 });
 
@@ -49,158 +50,158 @@ test('drop positions are clamped inside the viewport', () => {
       { x: 995, y: 100 },
     ],
   });
-  assert.equal(r.state.carrots[0].x, 24);
-  assert.equal(r.state.carrots[1].x, VIEW.width - 24);
+  assert.equal(r.state.crates[0].x, 24);
+  assert.equal(r.state.crates[1].x, VIEW.width - 24);
 });
 
-test('a carrot landing mid-frenzy skips the startle: monsters are not surprised', () => {
-  let s = { ...initialRabbitState(VIEW), modeUntil: Infinity, frenzyUntil: Infinity };
+test('a crate landing mid-overdrive skips the startle: an overdriven mech is not surprised', () => {
+  let s = { ...initialRabbitState(VIEW), modeUntil: Infinity, overdriveUntil: Infinity };
   let r = stepRabbit(s, input(1000, { drops: [{ x: 500, y: 100 }] }));
   let t = 1000;
-  while (!r.state.carrots[0].landed && t < 30_000) {
+  while (!r.state.crates[0].landed && t < 30_000) {
     t += 16;
     r = stepRabbit(r.state, input(t));
   }
   assert.equal(r.state.mode, 'chase');
 });
 
-test('full journey: chase, eat in 3 bites, hunger clock resets to the last bite', () => {
+test('full journey: chase, open in 3 cranks, hunger clock resets to the last crank', () => {
   let s = { ...initialRabbitState(VIEW), modeUntil: Infinity };
   let r = stepRabbit(s, input(1000, { drops: [{ x: 600, y: 100 }] }));
   let t = 1000;
-  let nibbles = 0;
-  let lastNibbleAt = 0;
-  while (r.state.carrots.length > 0 && t < 60_000) {
+  let clanks = 0;
+  let lastClankAt = 0;
+  while (r.state.crates.length > 0 && t < 60_000) {
     t += 16;
     r = stepRabbit(r.state, input(t));
-    if (r.events.includes('nibble')) {
-      nibbles++;
-      lastNibbleAt = t;
+    if (r.events.includes('clank')) {
+      clanks++;
+      lastClankAt = t;
     }
   }
-  assert.equal(r.state.carrots.length, 0, 'carrot fully eaten');
-  assert.equal(nibbles, 3);
-  assert.equal(r.state.eaten, 1);
-  assert.equal(r.state.eatingId, null);
-  // Fed: the 30s starvation countdown restarts from the meal, not from page load.
-  assert.equal(r.state.nextHungerAt, lastNibbleAt + HUNGER_INTERVAL_MS);
+  assert.equal(r.state.crates.length, 0, 'crate fully opened');
+  assert.equal(clanks, 3);
+  assert.equal(r.state.opened, 1);
+  assert.equal(r.state.openingId, null);
+  // Refueled: the 30s starvation countdown restarts from the meal, not from page load.
+  assert.equal(r.state.nextHungerAt, lastClankAt + HUNGER_INTERVAL_MS);
 });
 
-test('chase locks one target: a nearer carrot does not cause dithering', () => {
+test('chase locks one target: a nearer crate does not cause dithering', () => {
   const s = {
     ...initialRabbitState(VIEW),
     mode: 'chase',
     chasingId: 1,
     x: 500,
-    carrots: [landedCarrot(1, 400), landedCarrot(2, 490)], // #2 is closer
+    crates: [landedCrate(1, 400), landedCrate(2, 490)], // #2 is closer
   };
   const r = stepRabbit(s, input(1000));
   assert.equal(r.state.chasingId, 1, 'stays locked on the original target');
-  assert.ok(r.state.hopTo < r.state.x || r.state.midHop, 'hops toward the locked carrot');
+  assert.ok(r.state.hopTo < r.state.x || r.state.midHop, 'hops toward the locked crate');
 });
 
-test('arrival is a tolerance band and the rabbit turns to face its meal', () => {
+test('arrival is a tolerance band and the rabbit turns to face its crate', () => {
   const s = {
     ...initialRabbitState(VIEW),
     mode: 'chase',
     chasingId: 7,
     x: 500,
-    dir: -1, // facing away — must not matter for arrival, must flip for eating
-    carrots: [landedCarrot(7, 510)],
+    dir: -1, // facing away — must not matter for arrival, must flip for opening
+    crates: [landedCrate(7, 510)],
   };
   const r = stepRabbit(s, input(1000));
-  assert.equal(r.state.mode, 'eat');
-  assert.equal(r.state.eatingId, 7);
+  assert.equal(r.state.mode, 'open');
+  assert.equal(r.state.openingId, 7);
   assert.equal(r.state.dir, 1);
 });
 
-test('bites arrive on the 260ms clock (stage 0)', () => {
+test('cranks arrive on the 260ms clock (phase 0)', () => {
   const s = {
     ...initialRabbitState(VIEW),
-    mode: 'eat',
-    eatingId: 3,
+    mode: 'open',
+    openingId: 3,
     x: 300,
-    lastBite: 1000,
+    lastCrank: 1000,
     nextHungerAt: Infinity,
-    carrots: [landedCarrot(3, 300)],
+    crates: [landedCrate(3, 300)],
   };
   const early = stepRabbit(s, input(1259));
-  assert.ok(!early.events.includes('nibble'));
+  assert.ok(!early.events.includes('clank'));
   const onTime = stepRabbit(s, input(1260));
-  assert.ok(onTime.events.includes('nibble'));
-  assert.equal(onTime.state.carrots[0].bites, 1);
+  assert.ok(onTime.events.includes('clank'));
+  assert.equal(onTime.state.crates[0].cranks, 1);
 });
 
-test('frenzy halves the bite interval', () => {
+test('overdrive halves the crank interval', () => {
   const s = {
     ...initialRabbitState(VIEW),
-    mode: 'eat',
-    eatingId: 3,
+    mode: 'open',
+    openingId: 3,
     x: 300,
-    lastBite: 1000,
-    frenzyUntil: Infinity,
+    lastCrank: 1000,
+    overdriveUntil: Infinity,
     nextHungerAt: Infinity,
-    carrots: [landedCarrot(3, 300)],
+    crates: [landedCrate(3, 300)],
   };
   const early = stepRabbit(s, input(1129));
-  assert.ok(!early.events.includes('nibble'));
+  assert.ok(!early.events.includes('clank'));
   const onTime = stepRabbit(s, input(1130)); // 260 / 2
-  assert.ok(onTime.events.includes('nibble'));
+  assert.ok(onTime.events.includes('clank'));
 });
 
 // CHARACTERIZATION of the real growth rule (formerly rabbit.ts:362): a milestone
-// multiplies the rabbit's CURRENT size by 1.25 per stage gained. The rule is
+// multiplies the rabbit's CURRENT size by 1.25 per phase gained. The rule is
 // path-dependent — hunger shrink between milestones carries forward. The old
 // model.rabbitGrowth().scale (deleted, was dead in production) recomputed
-// 1.25^stages from scratch and would give 1.5625 here.
+// 1.25^phases from scratch and would give 1.5625 here.
 test('milestone growth compounds on the current, possibly hunger-shrunken, size', () => {
   const s = {
     ...initialRabbitState(VIEW),
-    mode: 'eat',
-    eatingId: 5,
+    mode: 'open',
+    openingId: 5,
     x: 300,
-    eaten: 9, // next carrot is the 10th: second milestone
-    stages: 1,
-    sizeScale: 1.125, // grew to 1.25 at stage 1, then one hunger tick
-    lastBite: 0,
+    opened: 9, // next crate is the 10th: second milestone
+    phase: 1,
+    sizeScale: 1.125, // grew to 1.25 at phase 1, then one hunger tick
+    lastCrank: 0,
     nextHungerAt: Infinity,
-    carrots: [{ ...landedCarrot(5, 300), bites: 2 }], // one bite from done
+    crates: [{ ...landedCrate(5, 300), cranks: 2 }], // one crank from done
   };
   const r = stepRabbit(s, input(1000));
-  assert.equal(r.state.eaten, 10);
-  assert.equal(r.state.stages, 2);
+  assert.equal(r.state.opened, 10);
+  assert.equal(r.state.phase, 2);
   assert.equal(r.state.sizeScale, 1.125 * 1.25); // 1.40625 — not 1.25 ** 2
-  assert.ok(r.events.includes('roar'), 'milestone unleashes the monster');
-  assert.equal(r.state.frenzyUntil, 1000 + 10_000);
+  assert.ok(r.events.includes('powerup'), 'milestone bolts on new armor');
+  assert.equal(r.state.overdriveUntil, 1000 + 10_000);
 });
 
 test('an unfed rabbit shrinks 10% every 30s, and the clock keeps ticking at the floor', () => {
   const s = {
     ...initialRabbitState(VIEW),
     modeUntil: Infinity,
-    stages: 1,
+    phase: 1,
     sizeScale: 1.25,
     nextHungerAt: 5000,
   };
   let r = stepRabbit(s, input(5000));
   assert.equal(r.state.sizeScale, 1.125);
-  assert.ok(r.events.includes('shrink'));
+  assert.ok(r.events.includes('powerdown'));
   assert.equal(r.state.nextHungerAt, 5000 + HUNGER_INTERVAL_MS);
 
   // At the original size the clock still advances but nothing shrinks or plays.
   r = stepRabbit({ ...r.state, sizeScale: 1 }, input(r.state.nextHungerAt));
   assert.equal(r.state.sizeScale, 1);
-  assert.ok(!r.events.includes('shrink'));
+  assert.ok(!r.events.includes('powerdown'));
   assert.equal(r.state.nextHungerAt, 5000 + 2 * HUNGER_INTERVAL_MS);
 });
 
-test('the ground never becomes a carrot warehouse: capped at 12, oldest evicted', () => {
+test('the ground never becomes a crate warehouse: capped at 12, oldest evicted', () => {
   const s = { ...initialRabbitState(VIEW), modeUntil: Infinity };
   const drops = Array.from({ length: 13 }, (_, i) => ({ x: 100 + i * 60, y: 100 }));
   const r = stepRabbit(s, input(1000, { drops }));
-  assert.equal(r.state.carrots.length, 12);
-  const ids = r.state.carrots.map((c) => c.id);
-  assert.ok(!ids.includes(1), 'the first-dropped carrot was evicted');
+  assert.equal(r.state.crates.length, 12);
+  const ids = r.state.crates.map((c) => c.id);
+  assert.ok(!ids.includes(1), 'the first-dropped crate was evicted');
 });
 
 test('a rested rabbit picks a roam target from the rng', () => {
@@ -225,12 +226,50 @@ test('displaySize: grow pulse overshoots, then settles back to the true size', (
   assert.equal(displaySize(s, 100 + 450), 2);
 });
 
-test('rabbitStages: milestones at 5/10/20/40/60, capped', () => {
-  assert.equal(rabbitStages(0), 0);
-  assert.equal(rabbitStages(4), 0);
-  assert.equal(rabbitStages(5), 1);
-  assert.equal(rabbitStages(60), 5);
-  assert.equal(rabbitStages(500), 5);
+test('mechPhase: milestones at 5/10/20/40/60, capped', () => {
+  assert.equal(mechPhase(0), 0);
+  assert.equal(mechPhase(4), 0);
+  assert.equal(mechPhase(5), 1);
+  assert.equal(mechPhase(60), 5);
+  assert.equal(mechPhase(500), 5);
+});
+
+test('crateTier: one above the phase, stepping at each milestone, capped at 5', () => {
+  assert.equal(crateTier(0), 1);
+  assert.equal(crateTier(4), 1);
+  assert.equal(crateTier(5), 2);
+  assert.equal(crateTier(10), 3);
+  assert.equal(crateTier(20), 4);
+  assert.equal(crateTier(40), 5);
+  assert.equal(crateTier(60), 5); // capped: no tier 6
+  assert.equal(crateTier(500), 5);
+});
+
+test('new drops are stamped with the tier of the current phase', () => {
+  const s = { ...initialRabbitState(VIEW), modeUntil: Infinity, opened: 5, phase: 1 };
+  const r = stepRabbit(s, input(1000, { drops: [{ x: 500, y: 100 }] }));
+  assert.equal(r.state.crates[0].tier, 2);
+});
+
+test('a crate keeps its tier for life: milestones only upgrade future drops', () => {
+  // A tier-1 crate is already on the ground when the rabbit crosses a milestone.
+  const s = {
+    ...initialRabbitState(VIEW),
+    mode: 'open',
+    openingId: 5,
+    x: 300,
+    opened: 4, // next crate is the 5th: first milestone
+    lastCrank: 0,
+    nextHungerAt: Infinity,
+    crates: [{ ...landedCrate(5, 300), cranks: 2 }, landedCrate(6, 700)],
+  };
+  const r = stepRabbit(s, input(1000, { drops: [{ x: 500, y: 100 }] }));
+  assert.equal(r.state.phase, 1);
+  assert.equal(r.state.crates.find((c) => c.id === 6).tier, 1, 'grounded crate stays tier 1');
+  assert.equal(r.state.crates.at(-1).tier, 1, 'drop ingested before the milestone crank is tier 1');
+  // The next drop after the milestone comes down a tier higher.
+  const r2 = stepRabbit(r.state, input(1016, { drops: [{ x: 800, y: 100 }] }));
+  assert.equal(r2.state.crates.at(-1).tier, 2);
 });
 
 test('hungerShrink: -10% per tick, converges to exactly 1 and stays there', () => {

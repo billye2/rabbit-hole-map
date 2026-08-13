@@ -1,5 +1,5 @@
-// The rabbit's gameplay: hunger, frenzy, growth milestones, chasing and
-// carrot physics — pure. No DOM, no chrome.*, no globals: the clock, rng
+// The mech rabbit's gameplay: hunger, overdrive, growth phases, chasing and
+// crate physics — pure. No DOM, no chrome.*, no globals: the clock, rng
 // and viewport are injected through StepInput, so the whole progression is
 // unit-testable under node --test (emitted as dist/gameplay.mjs).
 // Rendering (SVG, sounds) lives in rabbit.ts, which owns a RabbitState and
@@ -10,7 +10,7 @@ export interface Viewport {
   height: number;
 }
 
-export interface CarrotState {
+export interface CrateState {
   id: number;
   x: number;
   y: number;
@@ -18,10 +18,11 @@ export interface CarrotState {
   rot: number;
   vrot: number;
   landed: boolean;
-  bites: number;
+  cranks: number;
+  tier: number; // 1..CRATE_TIER_MAX, stamped at drop time and fixed for life
 }
 
-export type RabbitMode = 'idle' | 'roam' | 'alert' | 'chase' | 'eat';
+export type RabbitMode = 'idle' | 'roam' | 'alert' | 'chase' | 'open';
 
 export interface RabbitState {
   mode: RabbitMode;
@@ -35,30 +36,30 @@ export interface RabbitState {
   hopStart: number;
   hopDur: number;
   hopHeight: number;
-  eatingId: number | null;
-  chasingId: number | null; // locked target — prevents dithering between close carrots
-  lastBite: number;
+  openingId: number | null;
+  chasingId: number | null; // locked target — prevents dithering between close crates
+  lastCrank: number;
   lastNow: number;
-  eaten: number;
-  stages: number;
+  opened: number;
+  phase: number;
   sizeScale: number; // current size: milestones grow it, hunger shrinks it
   nextHungerAt: number; // -1 until the first step arms the clock
   growPulseAt: number;
   shrinkPulseAt: number;
-  frenzyUntil: number; // monster mode window
-  carrots: CarrotState[];
-  nextCarrotId: number;
+  overdriveUntil: number; // overdrive window
+  crates: CrateState[];
+  nextCrateId: number;
   lastViewportWidth: number;
   pose: { hopOffset: number; squashY: number }; // per-step render pose
 }
 
-export type GameEvent = 'nibble' | 'roar' | 'shrink';
+export type GameEvent = 'clank' | 'powerup' | 'powerdown';
 
 export interface StepInput {
   now: number;
   rng: () => number; // uniform [0, 1)
   viewport: Viewport;
-  drops: { x: number; y: number }[]; // carrot drops requested since the last step
+  drops: { x: number; y: number }[]; // crate drops requested since the last step
 }
 
 export interface StepResult {
@@ -66,24 +67,30 @@ export interface StepResult {
   events: GameEvent[];
 }
 
-export const GROUND_LIFT = 8; // rabbit/carrot baseline above the very bottom
+export const GROUND_LIFT = 8; // rabbit/crate baseline above the very bottom
 export const HUNGER_INTERVAL_MS = 30_000;
-export const RABBIT_MILESTONES = [5, 10, 20, 40, 60];
-export const BITES = 3;
+export const MECH_MILESTONES = [5, 10, 20, 40, 60];
+export const CRANKS = 3;
+export const CRATE_TIER_MAX = 5;
 
-const BASE_BITE_MS = 260;
-const GROWTH_FACTOR = 1.25; // per stage, compounding on the current size
-const MAX_CARROTS = 12;
+const BASE_CRANK_MS = 260;
+const GROWTH_FACTOR = 1.25; // per phase, compounding on the current size
+const MAX_CRATES = 12;
 const ROAM_HOP_MS = 450;
 const CHASE_HOP_MS = 300;
 const ROAM_HOP_LEN = 75;
 const CHASE_HOP_LEN = 95;
 const ALERT_MS = 650;
 const GROW_PULSE_MS = 450;
-const FRENZY_MS = 10_000; // monster mode after a milestone
+const OVERDRIVE_MS = 10_000; // overdrive after a milestone
 
-export function rabbitStages(eaten: number): number {
-  return RABBIT_MILESTONES.filter((m) => eaten >= m).length;
+export function mechPhase(opened: number): number {
+  return MECH_MILESTONES.filter((m) => opened >= m).length;
+}
+
+// The tier of a freshly dropped crate: one above the current phase, capped.
+export function crateTier(opened: number): number {
+  return Math.min(mechPhase(opened) + 1, CRATE_TIER_MAX);
 }
 
 // One hunger tick: 10% smaller, but never below the original size.
@@ -91,9 +98,9 @@ export function hungerShrink(scale: number): number {
   return Math.max(1, scale * 0.9);
 }
 
-// Eating speed: 1.5x once the first milestone is reached.
-function biteMs(stages: number): number {
-  return stages > 0 ? BASE_BITE_MS / 1.5 : BASE_BITE_MS;
+// Cranking speed: 1.5x once the first milestone is reached.
+function crankMs(phase: number): number {
+  return phase > 0 ? BASE_CRANK_MS / 1.5 : BASE_CRANK_MS;
 }
 
 // The size actually shown on screen: the true size modulated by a short
@@ -120,33 +127,33 @@ export function initialRabbitState(viewport: Viewport): RabbitState {
     hopStart: 0,
     hopDur: ROAM_HOP_MS,
     hopHeight: 22,
-    eatingId: null,
+    openingId: null,
     chasingId: null,
-    lastBite: 0,
+    lastCrank: 0,
     lastNow: 0,
-    eaten: 0,
-    stages: 0,
+    opened: 0,
+    phase: 0,
     sizeScale: 1,
     nextHungerAt: -1,
     growPulseAt: -Infinity,
     shrinkPulseAt: -Infinity,
-    frenzyUntil: -Infinity,
-    carrots: [],
-    nextCarrotId: 1,
+    overdriveUntil: -Infinity,
+    crates: [],
+    nextCrateId: 1,
     lastViewportWidth: viewport.width,
     pose: { hopOffset: 0, squashY: 1 },
   };
 }
 
-function findCarrot(s: RabbitState, id: number | null): CarrotState | null {
+function findCrate(s: RabbitState, id: number | null): CrateState | null {
   if (id == null) return null;
-  return s.carrots.find((c) => c.id === id) ?? null;
+  return s.crates.find((c) => c.id === id) ?? null;
 }
 
-function nearestLanded(s: RabbitState): CarrotState | null {
-  let best: CarrotState | null = null;
+function nearestLanded(s: RabbitState): CrateState | null {
+  let best: CrateState | null = null;
   let bestD = Infinity;
-  for (const c of s.carrots) {
+  for (const c of s.crates) {
     if (!c.landed) continue;
     const d = Math.abs(c.x - s.x);
     if (d < bestD) {
@@ -157,17 +164,17 @@ function nearestLanded(s: RabbitState): CarrotState | null {
   return best;
 }
 
-function removeCarrot(s: RabbitState, id: number): void {
-  const i = s.carrots.findIndex((c) => c.id === id);
-  if (i >= 0) s.carrots.splice(i, 1);
-  if (s.eatingId === id) s.eatingId = null;
+function removeCrate(s: RabbitState, id: number): void {
+  const i = s.crates.findIndex((c) => c.id === id);
+  if (i >= 0) s.crates.splice(i, 1);
+  if (s.openingId === id) s.openingId = null;
   if (s.chasingId === id) s.chasingId = null;
 }
 
-function onCarrotLanded(s: RabbitState, now: number): void {
+function onCrateLanded(s: RabbitState, now: number): void {
   if (s.mode === 'idle' || s.mode === 'roam') {
-    if (now < s.frenzyUntil) {
-      s.mode = 'chase'; // a monster doesn't pause to be startled
+    if (now < s.overdriveUntil) {
+      s.mode = 'chase'; // an overdriven mech doesn't pause to be startled
       return;
     }
     s.mode = 'alert';
@@ -177,14 +184,14 @@ function onCarrotLanded(s: RabbitState, now: number): void {
 }
 
 function startHop(s: RabbitState, now: number, target: number, chase: boolean): void {
-  const frenzy = now < s.frenzyUntil;
-  const len = (chase ? CHASE_HOP_LEN : ROAM_HOP_LEN) * (frenzy ? 1.5 : 1);
+  const overdrive = now < s.overdriveUntil;
+  const len = (chase ? CHASE_HOP_LEN : ROAM_HOP_LEN) * (overdrive ? 1.5 : 1);
   const delta = Math.max(-len, Math.min(len, target - s.x));
   s.hopFrom = s.x;
   s.hopTo = s.x + delta;
   s.hopStart = now;
-  s.hopDur = (chase ? CHASE_HOP_MS : ROAM_HOP_MS) / (frenzy ? 2 : 1);
-  s.hopHeight = frenzy ? 32 : chase ? 26 : 22;
+  s.hopDur = (chase ? CHASE_HOP_MS : ROAM_HOP_MS) / (overdrive ? 2 : 1);
+  s.hopHeight = overdrive ? 32 : chase ? 26 : 22;
   if (Math.abs(delta) > 1) s.dir = delta > 0 ? 1 : -1;
   s.midHop = true;
 }
@@ -194,21 +201,22 @@ function ingestDrops(s: RabbitState, input: StepInput): void {
   for (const d of input.drops) {
     const cx = Math.max(24, Math.min(input.viewport.width - 24, d.x));
     const startY = Math.max(60, Math.min(d.y, gy - 60));
-    s.carrots.push({
-      id: s.nextCarrotId++,
+    s.crates.push({
+      id: s.nextCrateId++,
       x: cx,
       y: startY,
       vy: 0,
       rot: (input.rng() - 0.5) * 30,
       vrot: (input.rng() - 0.5) * 3,
       landed: false,
-      bites: 0,
+      cranks: 0,
+      tier: crateTier(s.opened),
     });
-    // Keep the ground from becoming a carrot warehouse.
-    while (s.carrots.length > MAX_CARROTS) {
-      const oldest = s.carrots.find((k) => k.id !== s.eatingId);
+    // Keep the ground from becoming a crate warehouse.
+    while (s.crates.length > MAX_CRATES) {
+      const oldest = s.crates.find((k) => k.id !== s.openingId);
       if (!oldest) break;
-      removeCarrot(s, oldest.id);
+      removeCrate(s, oldest.id);
     }
   }
 }
@@ -216,7 +224,7 @@ function ingestDrops(s: RabbitState, input: StepInput): void {
 export function stepRabbit(state: RabbitState, input: StepInput): StepResult {
   const s: RabbitState = {
     ...state,
-    carrots: state.carrots.map((c) => ({ ...c })),
+    crates: state.crates.map((c) => ({ ...c })),
     pose: { hopOffset: 0, squashY: 1 },
   };
   const events: GameEvent[] = [];
@@ -241,22 +249,22 @@ export function stepRabbit(state: RabbitState, input: StepInput): StepResult {
     if (s.sizeScale > 1) {
       s.sizeScale = hungerShrink(s.sizeScale);
       s.shrinkPulseAt = now;
-      events.push('shrink');
+      events.push('powerdown');
     }
   }
 
-  // --- carrot physics ---
-  for (const c of s.carrots) {
+  // --- crate physics ---
+  for (const c of s.crates) {
     if (!c.landed) {
       c.vy += 0.0022 * dt * dt; // gravity, dt-scaled
       c.y += c.vy;
       c.rot += c.vrot;
-      // Land so the carrot's tip (17px below its origin) rests on the grass.
+      // Land so the crate's base (drawn 17px below its origin) rests on the grass.
       if (c.y >= gy - 18) {
         c.y = gy - 18;
         c.landed = true;
         c.rot = (c.rot % 20) - 10; // settle at a slight tilt
-        onCarrotLanded(s, now);
+        onCrateLanded(s, now);
       }
     }
   }
@@ -276,11 +284,11 @@ export function stepRabbit(state: RabbitState, input: StepInput): StepResult {
     const chase = s.mode === 'chase';
     let target = s.roamTarget;
     if (chase) {
-      // Stay locked on one carrot until it's gone — re-picking "nearest"
-      // every hop makes the rabbit dither between two close carrots.
-      const locked = findCarrot(s, s.chasingId);
+      // Stay locked on one crate until it's gone — re-picking "nearest"
+      // every hop makes the rabbit dither between two close crates.
+      const locked = findCrate(s, s.chasingId);
       if (!locked || !locked.landed) s.chasingId = nearestLanded(s)?.id ?? null;
-      const chasing = findCarrot(s, s.chasingId);
+      const chasing = findCrate(s, s.chasingId);
       if (!chasing) {
         s.mode = 'idle';
         s.modeUntil = now + 800;
@@ -295,12 +303,12 @@ export function stepRabbit(state: RabbitState, input: StepInput): StepResult {
         // must never depend on which way the rabbit currently faces.
         const tol = chase ? Math.max(16, 14 * s.sizeScale) : 10;
         if (Math.abs(target - s.x) < tol) {
-          const chasing = findCarrot(s, s.chasingId);
+          const chasing = findCrate(s, s.chasingId);
           if (chase && chasing) {
-            s.mode = 'eat';
-            s.eatingId = chasing.id;
+            s.mode = 'open';
+            s.openingId = chasing.id;
             s.chasingId = null;
-            s.lastBite = now;
+            s.lastCrank = now;
             s.dir = chasing.x >= s.x ? 1 : -1;
           } else if (!chase) {
             s.mode = 'idle';
@@ -321,31 +329,31 @@ export function stepRabbit(state: RabbitState, input: StepInput): StepResult {
         }
       }
     }
-  } else if (s.mode === 'eat') {
-    const eating = findCarrot(s, s.eatingId);
-    if (!eating) {
-      s.eatingId = null;
+  } else if (s.mode === 'open') {
+    const opening = findCrate(s, s.openingId);
+    if (!opening) {
+      s.openingId = null;
       s.mode = nearestLanded(s) ? 'chase' : 'idle';
       s.modeUntil = now + 900;
     } else {
-      s.pose.squashY = 1 - Math.abs(Math.sin(now / 90)) * 0.06; // munching bob
-      const biteEvery = now < s.frenzyUntil ? biteMs(s.stages) / 2 : biteMs(s.stages);
-      if (now - s.lastBite >= biteEvery) {
-        s.lastBite = now;
-        eating.bites++;
-        events.push('nibble');
-        if (eating.bites >= BITES) {
-          removeCarrot(s, eating.id);
-          s.eaten++;
-          s.nextHungerAt = now + HUNGER_INTERVAL_MS; // fed — hunger clock resets
-          const ns = rabbitStages(s.eaten);
-          if (ns > s.stages) {
-            s.sizeScale *= Math.pow(GROWTH_FACTOR, ns - s.stages); // level up!
-            s.stages = ns;
+      s.pose.squashY = 1 - Math.abs(Math.sin(now / 90)) * 0.06; // cranking bob
+      const crankEvery = now < s.overdriveUntil ? crankMs(s.phase) / 2 : crankMs(s.phase);
+      if (now - s.lastCrank >= crankEvery) {
+        s.lastCrank = now;
+        opening.cranks++;
+        events.push('clank');
+        if (opening.cranks >= CRANKS) {
+          removeCrate(s, opening.id);
+          s.opened++;
+          s.nextHungerAt = now + HUNGER_INTERVAL_MS; // refueled — hunger clock resets
+          const np = mechPhase(s.opened);
+          if (np > s.phase) {
+            s.sizeScale *= Math.pow(GROWTH_FACTOR, np - s.phase); // level up!
+            s.phase = np;
             s.growPulseAt = now;
-            // MILESTONE: unleash the monster — 10s feeding frenzy.
-            s.frenzyUntil = now + FRENZY_MS;
-            events.push('roar');
+            // MILESTONE: new armor bolts on — 10s overdrive.
+            s.overdriveUntil = now + OVERDRIVE_MS;
+            events.push('powerup');
           }
           s.mode = nearestLanded(s) ? 'chase' : 'idle';
           s.modeUntil = now + 1000;

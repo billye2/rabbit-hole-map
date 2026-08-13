@@ -17,9 +17,10 @@ const PAGES = {
          <a id="to-b-frag" href="/b#section">fragment link</a>`,
   '/c': `<!doctype html><title>Page C</title><p>the bottom of the hole</p>`,
   '/d': `<!doctype html><title>Page D</title><p>side quest</p>`,
-  '/e': `<!doctype html><title>Page E</title><p>fresh carrot bait</p>`,
+  '/e': `<!doctype html><title>Page E</title><p>fresh crate bait</p>`,
   '/f': `<!doctype html><title>Page F</title><p>more bait</p>`,
   '/g': `<!doctype html><title>Page G</title><p>even more bait</p>`,
+  '/h': `<!doctype html><title>Page H</title><p>an iron crate, surely</p>`,
 };
 
 export const test = base.extend({

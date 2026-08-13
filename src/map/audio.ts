@@ -38,59 +38,78 @@ export function playPop(): void {
   coinBlip(ac, BASE_FREQ * Math.pow(2, step / 12));
 }
 
-// A soft little munch tick — three of these in a row reads as nibbling.
-export function playNibble(): void {
+// A short metallic hit — two square oscillators at an inharmonic ratio.
+// Three of these in a row reads as wrench cranks on a crate.
+export function playClank(): void {
   const ac = ensureCtx();
   if (!ac) return;
   const t = ac.currentTime;
-  const osc = ac.createOscillator();
+  const osc1 = ac.createOscillator();
+  const osc2 = ac.createOscillator();
   const gain = ac.createGain();
-  osc.type = 'triangle';
-  osc.frequency.setValueAtTime(320, t);
-  osc.frequency.exponentialRampToValueAtTime(180, t + 0.07);
+  osc1.type = 'square';
+  osc1.frequency.setValueAtTime(520, t);
+  osc1.frequency.exponentialRampToValueAtTime(400, t + 0.05);
+  osc2.type = 'square';
+  osc2.frequency.setValueAtTime(707, t); // inharmonic against osc1 — reads as metal
   gain.gain.setValueAtTime(0.0001, t);
-  gain.gain.exponentialRampToValueAtTime(0.05, t + 0.008);
-  gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
-  osc.connect(gain).connect(ac.destination);
-  osc.start(t);
-  osc.stop(t + 0.1);
+  gain.gain.exponentialRampToValueAtTime(0.06, t + 0.005);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.1);
+  osc1.connect(gain);
+  osc2.connect(gain);
+  gain.connect(ac.destination);
+  osc1.start(t);
+  osc2.start(t);
+  osc1.stop(t + 0.12);
+  osc2.stop(t + 0.12);
 }
 
-// The monster-rabbit roar: a low sawtooth swell for the feeding frenzy.
-export function playRoar(): void {
+// New armor bolting on: a servo spin-up topped with a bright coin "ding".
+export function playPowerup(): void {
   const ac = ensureCtx();
   if (!ac) return;
   const t = ac.currentTime;
   const osc = ac.createOscillator();
   const gain = ac.createGain();
   osc.type = 'sawtooth';
-  osc.frequency.setValueAtTime(70, t);
-  osc.frequency.exponentialRampToValueAtTime(180, t + 0.18);
-  osc.frequency.exponentialRampToValueAtTime(55, t + 0.6);
+  osc.frequency.setValueAtTime(80, t);
+  osc.frequency.exponentialRampToValueAtTime(160, t + 0.1);
+  osc.frequency.exponentialRampToValueAtTime(330, t + 0.35);
   gain.gain.setValueAtTime(0.0001, t);
-  gain.gain.exponentialRampToValueAtTime(0.09, t + 0.05);
-  gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.65);
+  gain.gain.exponentialRampToValueAtTime(0.07, t + 0.04);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.55);
   osc.connect(gain).connect(ac.destination);
   osc.start(t);
-  osc.stop(t + 0.7);
+  osc.stop(t + 0.6);
+  // The "ding" lands right as the servo peaks.
+  const ding = ac.createOscillator();
+  const dingGain = ac.createGain();
+  ding.type = 'square';
+  ding.frequency.setValueAtTime(1318.5, t + 0.35); // E6
+  dingGain.gain.setValueAtTime(0.0001, t + 0.35);
+  dingGain.gain.exponentialRampToValueAtTime(0.06, t + 0.37);
+  dingGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.7);
+  ding.connect(dingGain).connect(ac.destination);
+  ding.start(t + 0.35);
+  ding.stop(t + 0.72);
 }
 
-// A gentle descending "aww" — the hungry rabbit shrinking a notch.
-export function playShrink(): void {
+// A robotic sigh — the low-fuel rabbit powering down a notch.
+export function playPowerdown(): void {
   const ac = ensureCtx();
   if (!ac) return;
   const t = ac.currentTime;
   const osc = ac.createOscillator();
   const gain = ac.createGain();
-  osc.type = 'triangle';
-  osc.frequency.setValueAtTime(280, t);
-  osc.frequency.exponentialRampToValueAtTime(150, t + 0.25);
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(240, t);
+  osc.frequency.exponentialRampToValueAtTime(90, t + 0.4);
   gain.gain.setValueAtTime(0.0001, t);
-  gain.gain.exponentialRampToValueAtTime(0.04, t + 0.01);
-  gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
+  gain.gain.exponentialRampToValueAtTime(0.03, t + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.45);
   osc.connect(gain).connect(ac.destination);
   osc.start(t);
-  osc.stop(t + 0.32);
+  osc.stop(t + 0.47);
 }
 
 // Classic coin shape: a short tone that jumps up a fourth and rings out.

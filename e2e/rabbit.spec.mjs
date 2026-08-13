@@ -26,7 +26,7 @@ test('the rabbit roams the ground', async ({ context, extensionId, site }) => {
   expect(moved).toBe(true);
 });
 
-test('a live-added site drops a carrot and the rabbit eats it', async ({ context, extensionId, site }) => {
+test('a live-added site drops a crate and the rabbit cranks it open', async ({ context, extensionId, site }) => {
   const page = await context.newPage();
   await page.goto(site + '/');
   const map = await openMap(context, extensionId);
@@ -34,11 +34,11 @@ test('a live-added site drops a carrot and the rabbit eats it', async ({ context
   await expect(map.locator('#nodes .node')).not.toHaveCount(0);
 
   await page.goto(site + '/e'); // background tab; map keeps focus + rAF
-  await expect(map.locator('#burrow-layer .carrot')).not.toHaveCount(0, { timeout: 8000 });
-  await expect(map.locator('#burrow-layer .carrot')).toHaveCount(0, { timeout: 15000 });
+  await expect(map.locator('#burrow-layer .crate')).not.toHaveCount(0, { timeout: 8000 });
+  await expect(map.locator('#burrow-layer .crate')).toHaveCount(0, { timeout: 15000 });
 });
 
-test('replaying an old session drops no carrots: history is not a feast', async ({ context, extensionId }) => {
+test('replaying an old session drops no crates: history is not a supply line', async ({ context, extensionId }) => {
   const map = await openMap(context, extensionId);
   await seedFixedSession(map);
   await map.reload();
@@ -46,10 +46,10 @@ test('replaying an old session drops no carrots: history is not a feast', async 
 
   await map.click('#replay-play'); // start over: nodes pop back in one by one
   await map.waitForTimeout(2500); // a few replay hops at 650ms each
-  await expect(map.locator('#burrow-layer .carrot')).toHaveCount(0);
+  await expect(map.locator('#burrow-layer .crate')).toHaveCount(0);
 });
 
-test('the 5th carrot triggers a monster feeding frenzy and +25% growth', async ({ context, extensionId, site }) => {
+test('the 5th crate triggers overdrive, +25% growth, and ear plating', async ({ context, extensionId, site }) => {
   test.setTimeout(120_000);
   const page = await context.newPage();
   await page.goto(site + '/');
@@ -62,15 +62,15 @@ test('the 5th carrot triggers a monster feeding frenzy and +25% growth', async (
     await new Promise((r) => setTimeout(r, 700));
   }
 
-  // The milestone must unleash the monster form (fangs out) mid-feast.
-  let sawMonster = false;
-  for (let i = 0; i < 120 && !sawMonster; i++) {
-    sawMonster = await map.evaluate(
-      () => document.querySelector('#burrow-layer .rabbit .fangs')?.getAttribute('visibility') === 'visible',
+  // The milestone must light the overdrive aura mid-feast.
+  let sawOverdrive = false;
+  for (let i = 0; i < 120 && !sawOverdrive; i++) {
+    sawOverdrive = await map.evaluate(
+      () => document.querySelector('#burrow-layer .rabbit .aura')?.getAttribute('opacity') === '0.3',
     );
-    if (!sawMonster) await new Promise((r) => setTimeout(r, 250));
+    if (!sawOverdrive) await new Promise((r) => setTimeout(r, 250));
   }
-  expect(sawMonster).toBe(true);
+  expect(sawOverdrive).toBe(true);
 
   // Feast done: grown 25%, ground cleared.
   await map.waitForFunction(
@@ -78,16 +78,23 @@ test('the 5th carrot triggers a monster feeding frenzy and +25% growth', async (
       const g = document.querySelector('#burrow-layer .rabbit');
       const m = /scale\(([-\d.]+)/.exec(g?.getAttribute('transform') ?? '');
       const scale = m ? Math.abs(Number(m[1])) : 1;
-      return scale >= 1.2 && document.querySelectorAll('#burrow-layer .carrot').length === 0;
+      return scale >= 1.2 && document.querySelectorAll('#burrow-layer .crate').length === 0;
     },
     { timeout: 90_000, polling: 500 },
   );
 
-  // The frenzy wears off and the cute form returns (fangs hidden).
-  await map.waitForFunction(
-    () => document.querySelector('#burrow-layer .rabbit .fangs')?.getAttribute('visibility') === 'hidden',
-    { timeout: 15_000, polling: 500 },
-  );
+  // Overdrive wears off (aura out) — but the phase-1 ear plating stays bolted on.
+  await map.waitForFunction(() => document.querySelector('#burrow-layer .rabbit .aura')?.getAttribute('opacity') === '0', {
+    timeout: 15_000,
+    polling: 500,
+  });
+  expect(
+    await map.evaluate(() => document.querySelector('#burrow-layer .rabbit .armor-1')?.getAttribute('visibility')),
+  ).toBe('visible');
+
+  // Past the milestone, freshly dropped crates come down a tier higher.
+  await page.goto(site + '/h');
+  await expect(map.locator('#burrow-layer .crate.tier-2')).not.toHaveCount(0, { timeout: 8000 });
 });
 
 test('an unfed rabbit gets hungry and shrinks 10% after 30 seconds', async ({ context, extensionId, site }) => {
@@ -98,12 +105,12 @@ test('an unfed rabbit gets hungry and shrinks 10% after 30 seconds', async ({ co
   await map.bringToFront();
   await expect(map.locator('#nodes .node')).not.toHaveCount(0);
 
-  // Grow it to 1.25 first (5+ carrots).
+  // Grow it to 1.25 first (5+ crates).
   for (const path of ['/b', '/c', '/d', '/e', '/f', '/g']) {
     await page.goto(site + path);
     await new Promise((r) => setTimeout(r, 700));
   }
-  await map.waitForFunction(() => document.querySelectorAll('#burrow-layer .carrot').length === 0, {
+  await map.waitForFunction(() => document.querySelectorAll('#burrow-layer .crate').length === 0, {
     timeout: 60_000,
     polling: 500,
   });
