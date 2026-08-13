@@ -3,7 +3,21 @@
 // sibling of #viewport), so panning/zooming the graph never moves the
 // ground. Everything uses attribute fills — no CSS — so the PNG export's
 // SVG-clone path renders it as-is.
-import { HUNGER_INTERVAL_MS, hungerShrink, rabbitGrowth, rabbitStages } from '../model.js';
+//
+// This file is the paint adapter: it builds the sprites, feeds each rAF
+// into the pure gameplay step (gameplay.ts), plays the step's events, and
+// projects the resulting RabbitState onto SVG attributes. All behaviour
+// decisions live in gameplay.ts.
+import {
+  BITES,
+  GROUND_LIFT,
+  displaySize,
+  initialRabbitState,
+  stepRabbit,
+  type GameEvent,
+  type RabbitState,
+  type Viewport,
+} from './gameplay.js';
 import { playNibble, playRoar, playShrink } from './audio.js';
 
 const SVGNS = 'http://www.w3.org/2000/svg';
@@ -12,33 +26,8 @@ const WHITE = '#ffffff';
 const PINK = '#ff9eb5';
 const ORANGE = '#ff9f1c';
 const LEAF = '#06d6a0';
-
-const GROUND_LIFT = 8; // rabbit/carrot baseline above the very bottom
-const MAX_CARROTS = 12;
-const ROAM_HOP_MS = 450;
-const CHASE_HOP_MS = 300;
-const ROAM_HOP_LEN = 75;
-const CHASE_HOP_LEN = 95;
-const ALERT_MS = 650;
-const BITES = 3;
-const GROW_PULSE_MS = 450;
-const FRENZY_MS = 10_000; // monster mode after a milestone
 const MONSTER_RED = '#ff2244';
 const AURA = '#6b21a8';
-
-interface Carrot {
-  el: SVGGElement;
-  scaleEl: SVGGElement;
-  x: number;
-  y: number;
-  vy: number;
-  rot: number;
-  vrot: number;
-  landed: boolean;
-  bites: number;
-}
-
-type State = 'idle' | 'roam' | 'alert' | 'chase' | 'eat';
 
 export interface RabbitLayer {
   tick(now: number): void;
@@ -141,42 +130,14 @@ export function initRabbit(svg: SVGSVGElement): RabbitLayer {
   const carrotG = el('g', {}, layer);
   const { root: rabbitEl, squash, bubble, eye, innerEars, aura, fangs } = buildRabbit(layer);
 
-  const groundY = () => window.innerHeight - GROUND_LIFT;
-  const carrots: Carrot[] = [];
+  const viewport = (): Viewport => ({ width: window.innerWidth, height: window.innerHeight });
+  let state: RabbitState = initialRabbitState(viewport());
+  let pendingDrops: { x: number; y: number }[] = [];
+  const carrotEls = new Map<number, { el: SVGGElement; scaleEl: SVGGElement; paintedBites: number }>();
+  let paintedMonster = false;
+  let paintedAlert = false;
 
-  let x = window.innerWidth * 0.3;
-  let dir = 1;
-  let state: State = 'idle';
-  let stateUntil = 0;
-  let roamTarget = x;
-  let midHop = false;
-  let hopFrom = 0;
-  let hopTo = 0;
-  let hopStart = 0;
-  let hopDur = ROAM_HOP_MS;
-  let hopHeight = 22;
-  let eating: Carrot | null = null;
-  let chasing: Carrot | null = null; // locked target — prevents dithering between close carrots
-  let lastBite = 0;
-  let lastNow = 0;
-  let eaten = 0;
-  let growth = rabbitGrowth(0); // supplies bite speed (a kept achievement)
-  let stages = 0;
-  let sizeScale = 1; // current displayed size: milestones grow it, hunger shrinks it
-  let nextHungerAt = -1;
-  let growPulseAt = -Infinity;
-  let shrinkPulseAt = -Infinity;
-  let frenzyUntil = -Infinity; // monster mode window
-  let monsterOn = false;
-
-  function setMonster(on: boolean): void {
-    monsterOn = on;
-    eye.setAttribute('fill', on ? MONSTER_RED : NAVY);
-    eye.setAttribute('r', on ? '2.6' : '1.7');
-    fangs.setAttribute('visibility', on ? 'visible' : 'hidden');
-    for (const e of innerEars) e.setAttribute('fill', on ? MONSTER_RED : PINK);
-    aura.setAttribute('opacity', on ? '0.3' : '0');
-  }
+  const SOUNDS: Record<GameEvent, () => void> = { nibble: playNibble, roar: playRoar, shrink: playShrink };
 
   function layoutGround(): void {
     ground.setAttribute('x', '-20');
@@ -185,235 +146,79 @@ export function initRabbit(svg: SVGSVGElement): RabbitLayer {
   }
   layoutGround();
 
-  function nearestLanded(): Carrot | null {
-    let best: Carrot | null = null;
-    let bestD = Infinity;
-    for (const c of carrots) {
-      if (!c.landed) continue;
-      const d = Math.abs(c.x - x);
-      if (d < bestD) {
-        bestD = d;
-        best = c;
+  function setMonster(on: boolean): void {
+    eye.setAttribute('fill', on ? MONSTER_RED : NAVY);
+    eye.setAttribute('r', on ? '2.6' : '1.7');
+    fangs.setAttribute('visibility', on ? 'visible' : 'hidden');
+    for (const e of innerEars) e.setAttribute('fill', on ? MONSTER_RED : PINK);
+    aura.setAttribute('opacity', on ? '0.3' : '0');
+  }
+
+  function paint(now: number): void {
+    // Carrots: keyed by id — create, update, and remove to match the state.
+    const alive = new Set<number>();
+    for (const c of state.carrots) {
+      alive.add(c.id);
+      let entry = carrotEls.get(c.id);
+      if (!entry) {
+        entry = { ...buildCarrot(carrotG), paintedBites: -1 };
+        carrotEls.set(c.id, entry);
+      }
+      entry.el.setAttribute('transform', `translate(${c.x},${c.y}) rotate(${c.rot})`);
+      if (c.bites !== entry.paintedBites) {
+        entry.paintedBites = c.bites;
+        const s = Math.max(0, 1 - c.bites / BITES);
+        entry.scaleEl.setAttribute('transform', `scale(${0.4 + 0.6 * s})`);
+        entry.scaleEl.setAttribute('opacity', String(0.3 + 0.7 * s));
       }
     }
-    return best;
-  }
-
-  function removeCarrot(c: Carrot): void {
-    const i = carrots.indexOf(c);
-    if (i >= 0) carrots.splice(i, 1);
-    c.el.remove();
-    if (eating === c) eating = null;
-    if (chasing === c) chasing = null;
-  }
-
-  function onCarrotLanded(now: number): void {
-    if (state === 'idle' || state === 'roam') {
-      if (now < frenzyUntil) {
-        state = 'chase'; // a monster doesn't pause to be startled
-        return;
-      }
-      state = 'alert';
-      stateUntil = now + ALERT_MS;
-      midHop = false;
-      bubble.setAttribute('visibility', 'visible');
-    }
-  }
-
-  function startHop(now: number, target: number, chase: boolean): void {
-    const frenzy = now < frenzyUntil;
-    const len = (chase ? CHASE_HOP_LEN : ROAM_HOP_LEN) * (frenzy ? 1.5 : 1);
-    const delta = Math.max(-len, Math.min(len, target - x));
-    hopFrom = x;
-    hopTo = x + delta;
-    hopStart = now;
-    hopDur = (chase ? CHASE_HOP_MS : ROAM_HOP_MS) / (frenzy ? 2 : 1);
-    hopHeight = frenzy ? 32 : chase ? 26 : 22;
-    if (Math.abs(delta) > 1) dir = delta > 0 ? 1 : -1;
-    midHop = true;
-  }
-
-  function tick(now: number): void {
-    const dt = lastNow ? Math.min(50, now - lastNow) : 16;
-    lastNow = now;
-    const gy = groundY();
-
-    // --- hunger clock: every 30s without a meal, shrink 10% back toward
-    // the original size (never below it) ---
-    if (nextHungerAt < 0) nextHungerAt = now + HUNGER_INTERVAL_MS;
-    if (now >= nextHungerAt) {
-      nextHungerAt = now + HUNGER_INTERVAL_MS;
-      if (sizeScale > 1) {
-        sizeScale = hungerShrink(sizeScale);
-        shrinkPulseAt = now;
-        playShrink();
+    for (const [id, entry] of carrotEls) {
+      if (!alive.has(id)) {
+        entry.el.remove();
+        carrotEls.delete(id);
       }
     }
 
-    // Frenzy wears off: back to the cute (but bigger) form.
-    if (monsterOn && now >= frenzyUntil) setMonster(false);
+    const alertOn = state.mode === 'alert';
+    if (alertOn !== paintedAlert) {
+      paintedAlert = alertOn;
+      bubble.setAttribute('visibility', alertOn ? 'visible' : 'hidden');
+    }
+
+    const monsterOn = now < state.frenzyUntil;
+    if (monsterOn !== paintedMonster) {
+      paintedMonster = monsterOn;
+      setMonster(monsterOn);
+    }
     if (monsterOn) {
       // Pulsing dark aura while the monster is out.
       aura.setAttribute('rx', String(34 + Math.sin(now / 110) * 5));
       aura.setAttribute('ry', String(32 + Math.cos(now / 130) * 4));
     }
 
-    // --- carrot physics ---
-    for (const c of [...carrots]) {
-      if (!c.landed) {
-        c.vy += 0.0022 * dt * dt; // gravity, dt-scaled
-        c.y += c.vy;
-        c.rot += c.vrot;
-        // Land so the carrot's tip (17px below its origin) rests on the grass.
-        if (c.y >= gy - 18) {
-          c.y = gy - 18;
-          c.landed = true;
-          c.rot = (c.rot % 20) - 10; // settle at a slight tilt
-          onCarrotLanded(now);
-        }
-        c.el.setAttribute('transform', `translate(${c.x},${c.y}) rotate(${c.rot})`);
-      }
-    }
+    const gy = window.innerHeight - GROUND_LIFT;
+    const size = displaySize(state, now);
+    rabbitEl.setAttribute(
+      'transform',
+      `translate(${state.x},${gy - state.pose.hopOffset}) scale(${state.dir * size},${size})`,
+    );
+    squash.setAttribute('transform', `scale(1,${state.pose.squashY})`);
+  }
 
-    // --- state machine ---
-    let hopOffset = 0;
-    let squashY = 1;
-
-    if (state === 'alert' && now >= stateUntil) {
-      bubble.setAttribute('visibility', 'hidden');
-      state = 'chase';
-    }
-
-    if (state === 'idle') {
-      squashY = 1 + Math.sin(now / 380) * 0.02; // breathing
-      if (nearestLanded()) {
-        state = 'chase';
-      } else if (now >= stateUntil) {
-        roamTarget = 40 + Math.random() * (window.innerWidth - 80);
-        state = 'roam';
-      }
-    } else if (state === 'roam' || state === 'chase') {
-      const chase = state === 'chase';
-      let target = roamTarget;
-      if (chase) {
-        // Stay locked on one carrot until it's gone — re-picking "nearest"
-        // every hop makes the rabbit dither between two close carrots.
-        if (!chasing || !carrots.includes(chasing) || !chasing.landed) chasing = nearestLanded();
-        if (!chasing) {
-          state = 'idle';
-          stateUntil = now + 800;
-          target = x;
-        } else {
-          target = chasing.x;
-        }
-      }
-      if (state === 'roam' || state === 'chase') {
-        if (!midHop) {
-          // Arrival is a tolerance band, not an exact point — the target
-          // must never depend on which way the rabbit currently faces.
-          const tol = chase ? Math.max(16, 14 * sizeScale) : 10;
-          if (Math.abs(target - x) < tol) {
-            if (chase && chasing) {
-              state = 'eat';
-              eating = chasing;
-              chasing = null;
-              lastBite = now;
-              dir = eating.x >= x ? 1 : -1;
-            } else if (!chase) {
-              state = 'idle';
-              stateUntil = now + 1200 + Math.random() * 2600;
-            }
-          } else {
-            startHop(now, target, chase);
-          }
-        }
-        if (midHop) {
-          const t = Math.min(1, (now - hopStart) / hopDur);
-          x = hopFrom + (hopTo - hopFrom) * t;
-          hopOffset = Math.sin(t * Math.PI) * hopHeight;
-          squashY = 1 + Math.sin(t * Math.PI) * 0.08; // stretch mid-air
-          if (t >= 1) {
-            midHop = false;
-            squashY = 0.94; // landing squash
-          }
-        }
-      }
-    } else if (state === 'eat') {
-      if (!eating || !carrots.includes(eating)) {
-        eating = null;
-        state = nearestLanded() ? 'chase' : 'idle';
-        stateUntil = now + 900;
-      } else {
-        squashY = 1 - Math.abs(Math.sin(now / 90)) * 0.06; // munching bob
-        const biteEvery = now < frenzyUntil ? growth.biteMs / 2 : growth.biteMs;
-        if (now - lastBite >= biteEvery) {
-          lastBite = now;
-          eating.bites++;
-          playNibble();
-          const s = Math.max(0, 1 - eating.bites / BITES);
-          eating.scaleEl.setAttribute('transform', `scale(${0.4 + 0.6 * s})`);
-          eating.scaleEl.setAttribute('opacity', String(0.3 + 0.7 * s));
-          if (eating.bites >= BITES) {
-            removeCarrot(eating);
-            eaten++;
-            nextHungerAt = now + HUNGER_INTERVAL_MS; // fed — hunger clock resets
-            const ns = rabbitStages(eaten);
-            if (ns > stages) {
-              sizeScale *= Math.pow(1.25, ns - stages); // level up!
-              stages = ns;
-              growPulseAt = now;
-              // MILESTONE: unleash the monster — 10s feeding frenzy.
-              frenzyUntil = now + FRENZY_MS;
-              setMonster(true);
-              playRoar();
-            }
-            growth = rabbitGrowth(eaten);
-            state = nearestLanded() ? 'chase' : 'idle';
-            stateUntil = now + 1000;
-          }
-        }
-      }
-    }
-
-    const sinceGrow = now - growPulseAt;
-    const sinceShrink = now - shrinkPulseAt;
-    let pulse = 1;
-    if (sinceGrow < GROW_PULSE_MS) pulse = 1 + 0.18 * Math.sin((sinceGrow / GROW_PULSE_MS) * Math.PI);
-    else if (sinceShrink < GROW_PULSE_MS) pulse = 1 - 0.12 * Math.sin((sinceShrink / GROW_PULSE_MS) * Math.PI);
-    const size = sizeScale * pulse;
-    rabbitEl.setAttribute('transform', `translate(${x},${gy - hopOffset}) scale(${dir * size},${size})`);
-    squash.setAttribute('transform', `scale(1,${squashY})`);
+  function tick(now: number): void {
+    const result = stepRabbit(state, { now, rng: Math.random, viewport: viewport(), drops: pendingDrops });
+    pendingDrops = [];
+    state = result.state;
+    for (const e of result.events) SOUNDS[e]();
+    paint(now);
   }
 
   function dropCarrot(screenX: number, screenY: number): void {
-    const w = window.innerWidth;
-    const cx = Math.max(24, Math.min(w - 24, screenX));
-    const startY = Math.max(60, Math.min(screenY, groundY() - 60));
-    const { el: cEl, scaleEl } = buildCarrot(carrotG);
-    const c: Carrot = {
-      el: cEl,
-      scaleEl,
-      x: cx,
-      y: startY,
-      vy: 0,
-      rot: (Math.random() - 0.5) * 30,
-      vrot: (Math.random() - 0.5) * 3,
-      landed: false,
-      bites: 0,
-    };
-    cEl.setAttribute('transform', `translate(${c.x},${c.y}) rotate(${c.rot})`);
-    carrots.push(c);
-    // Keep the ground from becoming a carrot warehouse.
-    while (carrots.length > MAX_CARROTS) {
-      const oldest = carrots.find((k) => k !== eating);
-      if (!oldest) break;
-      removeCarrot(oldest);
-    }
+    pendingDrops.push({ x: screenX, y: screenY });
   }
 
   function resize(): void {
     layoutGround();
-    x = Math.max(30, Math.min(window.innerWidth - 30, x));
   }
 
   return { tick, dropCarrot, resize };

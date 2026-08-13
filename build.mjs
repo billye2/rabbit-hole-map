@@ -15,10 +15,15 @@ await esbuild.build({
   logLevel: 'info',
 });
 
-// ESM build of the pure model for node --test
+// ESM build of the pure modules for node --test. Adding an entry point here
+// is what puts a module on the unit-test seam.
 await esbuild.build({
-  entryPoints: ['src/model.ts'],
-  outfile: 'dist/model.mjs',
+  entryPoints: {
+    model: 'src/model.ts',
+    gameplay: 'src/map/gameplay.ts',
+  },
+  outdir: 'dist',
+  outExtension: { '.js': '.mjs' },
   bundle: true,
   format: 'esm',
   target: 'node20',
