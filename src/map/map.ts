@@ -576,34 +576,23 @@ async function showSession(id: string | null): Promise<void> {
 
 sessionSelect.addEventListener('change', () => showSession(sessionSelect.value));
 
-chrome.storage.onChanged.addListener((changes, area) => {
-  if (area !== 'local') return;
-  if (!session) {
-    // The map was opened on the empty state and a session just started —
-    // switch to it live instead of sitting on "PRESS START" forever. The
-    // background writes currentSessionId BEFORE the session data, so react
-    // to any session-related key and re-check until the data is loadable.
-    const touched = Object.keys(changes).some(
-      (k) => k === 'currentSessionId' || k === 'sessionIndex' || k.startsWith('session:'),
-    );
-    if (touched) {
-      void (async () => {
-        if (session) return;
-        const id = await store.currentSessionId();
-        if (!id || !(await store.loadSession(id))) return; // data not written yet
-        await loadSessionList(id);
-        await showSession(id);
-      })();
-    }
-    return;
-  }
-  const key = store.sessionKey(session.id);
-  if (changes[key]) {
-    session = changes[key].newValue as Session;
+store.onSessionsChanged({
+  // The map was opened on the empty state and a session just started —
+  // switch to it live instead of sitting on "PRESS START" forever. The
+  // store has already waited out the current-before-data write order.
+  onCurrentSession: (s) => {
+    if (session) return;
+    void loadSessionList(s.id).then(() => showSession(s.id));
+  },
+  onSession: (s) => {
+    if (!session || s.id !== session.id) return;
+    session = s;
     computeTimeline();
     if (replayCutoff == null) rebuild(); // don't yank the user out of a replay
-  }
-  if (changes['sessionIndex']) void loadSessionList(session.id);
+  },
+  onIndex: () => {
+    if (session) void loadSessionList(session.id);
+  },
 });
 
 async function init(): Promise<void> {

@@ -1,6 +1,8 @@
 // The shared demo session used by every marketing asset (screenshots and
 // promo video), so they all tell the same story: an innocent carbonara
 // search that ends, ~1h45m later, deep in trebuchet memes.
+import { seedRecords } from '../dist/schema.mjs';
+
 export function makeSession() {
   const nodes = {};
   const edges = [];
@@ -43,20 +45,8 @@ export function makeSession() {
   return { id: String(start), start, end: time, nodes, edges };
 }
 
-// Seeds the session into the extension's storage from any extension page.
+// Seeds the session into the extension's storage from any extension page,
+// through the same schema module the store itself uses.
 export function seedSession(page, session) {
-  return page.evaluate(
-    (s) =>
-      new Promise((res) =>
-        chrome.storage.local.set(
-          {
-            ['session:' + s.id]: s,
-            currentSessionId: s.id,
-            sessionIndex: [{ id: s.id, start: s.start, end: s.end, pages: Object.keys(s.nodes).length }],
-          },
-          res,
-        ),
-      ),
-    session,
-  );
+  return page.evaluate((records) => chrome.storage.local.set(records), seedRecords(session));
 }

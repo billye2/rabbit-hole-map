@@ -1,4 +1,4 @@
-import { test, expect } from './fixtures.mjs';
+import { test, expect, seedSession } from './fixtures.mjs';
 
 // Seed a deterministic session straight into storage so the scoreboard
 // numbers are exactly predictable.
@@ -26,20 +26,7 @@ const SESSION = {
 test('popup scoreboard reports the session accurately', async ({ context, extensionId }) => {
   const seedPage = await context.newPage();
   await seedPage.goto(`chrome-extension://${extensionId}/src/map/map.html`);
-  await seedPage.evaluate(
-    (s) =>
-      new Promise((res) =>
-        chrome.storage.local.set(
-          {
-            ['session:' + s.id]: s,
-            currentSessionId: s.id,
-            sessionIndex: [{ id: s.id, start: s.start, end: s.end, pages: Object.keys(s.nodes).length }],
-          },
-          res,
-        ),
-      ),
-    SESSION,
-  );
+  await seedSession(seedPage, SESSION);
 
   const popup = await context.newPage();
   await popup.goto(`chrome-extension://${extensionId}/src/popup/popup.html`);

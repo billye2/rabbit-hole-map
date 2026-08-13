@@ -17,24 +17,6 @@ function enqueue(fn: () => Promise<void>): void {
   queue = queue.then(fn, fn).catch((err) => console.error('rabbit-hole-map:', err));
 }
 
-interface TabState {
-  urls: Record<string, string>; // tabId -> last committed url
-  openers: Record<string, string>; // tabId -> url of the page that opened it
-}
-
-// Kept in storage.session so it survives service-worker restarts.
-async function getTabState(): Promise<TabState> {
-  const st = await chrome.storage.session.get(['tabUrls', 'tabOpeners']);
-  return {
-    urls: (st.tabUrls as Record<string, string>) ?? {},
-    openers: (st.tabOpeners as Record<string, string>) ?? {},
-  };
-}
-
-async function setTabState(s: TabState): Promise<void> {
-  await chrome.storage.session.set({ tabUrls: s.urls, tabOpeners: s.openers });
-}
-
 const EDGE_TRANSITIONS = new Set(['link', 'form_submit', 'client_redirect']);
 
 async function recordNavigation(tabId: number, rawUrl: string, transitionType: string, time: number): Promise<void> {
@@ -45,7 +27,7 @@ async function recordNavigation(tabId: number, rawUrl: string, transitionType: s
   if (!shouldTrack(rawUrl, settings.blocklist)) return;
 
   const url = normalizeUrl(rawUrl);
-  const state = await getTabState();
+  const state = await store.loadTabState();
   const key = String(tabId);
   const prev = state.urls[key];
   const opener = state.openers[key];
@@ -58,7 +40,7 @@ async function recordNavigation(tabId: number, rawUrl: string, transitionType: s
 
   state.urls[key] = url;
   delete state.openers[key];
-  await setTabState(state);
+  await store.saveTabState(state);
 
   let session: Session | null = null;
   const curId = await store.currentSessionId();
@@ -97,11 +79,11 @@ chrome.tabs.onCreated.addListener((tab) => {
   const openerId = tab.openerTabId;
   if (tabId == null || openerId == null) return;
   enqueue(async () => {
-    const state = await getTabState();
+    const state = await store.loadTabState();
     const openerUrl = state.urls[String(openerId)];
     if (openerUrl) {
       state.openers[String(tabId)] = openerUrl;
-      await setTabState(state);
+      await store.saveTabState(state);
     }
   });
 });
@@ -121,9 +103,9 @@ chrome.tabs.onUpdated.addListener((_tabId, info, tab) => {
 
 chrome.tabs.onRemoved.addListener((tabId) => {
   enqueue(async () => {
-    const state = await getTabState();
+    const state = await store.loadTabState();
     delete state.urls[String(tabId)];
     delete state.openers[String(tabId)];
-    await setTabState(state);
+    await store.saveTabState(state);
   });
 });

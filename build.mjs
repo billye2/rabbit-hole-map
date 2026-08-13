@@ -21,6 +21,8 @@ await esbuild.build({
   entryPoints: {
     model: 'src/model.ts',
     gameplay: 'src/map/gameplay.ts',
+    schema: 'src/schema.ts',
+    storage: 'src/storage.ts',
   },
   outdir: 'dist',
   outExtension: { '.js': '.mjs' },

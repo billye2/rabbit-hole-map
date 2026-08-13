@@ -6,13 +6,13 @@
   "scripts": {
     "build": "node build.mjs",
     "icons": "node gen-icons.mjs",
-    "test": "npm run build && node --test tests/model.test.mjs tests/gameplay.test.mjs tests/version.test.mjs",
+    "test": "npm run build && node --test tests/model.test.mjs tests/gameplay.test.mjs tests/storage.test.mjs tests/version.test.mjs",
     "lint": "eslint . && prettier --check .",
     "lint:fix": "eslint . --fix && prettier --write .",
     "bump": "node scripts/bump.mjs",
     "release": "node scripts/release.mjs",
     "release:publish": "node scripts/release.mjs --publish",
-    "assets": "node marketing/capture.mjs",
+    "assets": "npm run build && node marketing/capture.mjs",
     "assets:video": "npm run build && node marketing/video.mjs",
     "e2e": "npm run build && playwright test"
   },

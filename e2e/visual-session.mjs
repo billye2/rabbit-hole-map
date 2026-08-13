@@ -1,6 +1,8 @@
 // A fully deterministic seeded session for the visual-regression and a11y
 // tiers: fixed timestamps (no Date.now, no randomness) so every render is
-// pixel-stable. Same storage shape as marketing/session.mjs.
+// pixel-stable.
+import { seedRecords } from '../dist/schema.mjs';
+
 export function fixedSession() {
   const nodes = {};
   const edges = [];
@@ -32,18 +34,5 @@ export function fixedSession() {
 }
 
 export function seedFixedSession(page, session = fixedSession()) {
-  return page.evaluate(
-    (s) =>
-      new Promise((res) =>
-        chrome.storage.local.set(
-          {
-            ['session:' + s.id]: s,
-            currentSessionId: s.id,
-            sessionIndex: [{ id: s.id, start: s.start, end: s.end, pages: Object.keys(s.nodes).length }],
-          },
-          res,
-        ),
-      ),
-    session,
-  );
+  return page.evaluate((records) => chrome.storage.local.set(records), seedRecords(session));
 }

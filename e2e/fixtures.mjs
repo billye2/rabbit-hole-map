@@ -5,6 +5,7 @@ import { test as base, chromium, expect } from '@playwright/test';
 import http from 'node:http';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { CURRENT_KEY, SESSION_PREFIX, seedRecords } from '../dist/schema.mjs';
 
 export const EXTENSION_PATH = dirname(dirname(fileURLToPath(import.meta.url)));
 
@@ -68,22 +69,30 @@ export async function openMap(context, extensionId) {
   return map;
 }
 
+// Seeds a session through the same door the store reads from (schema.mjs).
+export function seedSession(page, session) {
+  return page.evaluate((records) => chrome.storage.local.set(records), seedRecords(session));
+}
+
 export async function readSession(page) {
-  return page.evaluate(async () => {
-    const st = await chrome.storage.local.get(null);
-    return st.currentSessionId ? st['session:' + st.currentSessionId] : null;
-  });
+  return page.evaluate(
+    async ({ cur, prefix }) => {
+      const st = await chrome.storage.local.get(null);
+      return st[cur] ? st[prefix + st[cur]] : null;
+    },
+    { cur: CURRENT_KEY, prefix: SESSION_PREFIX },
+  );
 }
 
 // Waits until the background has flushed at least `n` nodes into storage.
 export async function waitForNodes(page, n, timeout = 8000) {
   await page.waitForFunction(
-    async (want) => {
+    async ({ cur, prefix, want }) => {
       const st = await chrome.storage.local.get(null);
-      const s = st.currentSessionId ? st['session:' + st.currentSessionId] : null;
+      const s = st[cur] ? st[prefix + st[cur]] : null;
       return s && Object.keys(s.nodes).length >= want;
     },
-    n,
+    { cur: CURRENT_KEY, prefix: SESSION_PREFIX, want: n },
     { timeout },
   );
 }
@@ -93,12 +102,12 @@ export async function waitForNodes(page, n, timeout = 8000) {
 // previous one's tab-state write lands, silently dropping the edge.
 export async function waitForTracked(probePage, url, timeout = 8000) {
   await probePage.waitForFunction(
-    async (u) => {
+    async ({ cur, prefix, u }) => {
       const st = await chrome.storage.local.get(null);
-      const s = st.currentSessionId ? st['session:' + st.currentSessionId] : null;
+      const s = st[cur] ? st[prefix + st[cur]] : null;
       return !!(s && s.nodes[u]);
     },
-    url,
+    { cur: CURRENT_KEY, prefix: SESSION_PREFIX, u: url },
     { timeout },
   );
 }
