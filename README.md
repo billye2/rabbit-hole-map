@@ -32,7 +32,8 @@ them:
 - **Sessions** — a 30-minute pause starts a fresh map, so "tonight's rabbit
   hole" doesn't blur into "this morning's".
 - **Replay** — scrub or play the trail back in chronological order; a full
-  replay re-bounces every node with its own ascending blip.
+  replay re-bounces every node. Replay is a picture of history: coin blips
+  and rabbit carrots stay reserved for sites you visit live.
 - **Drag to pin** — drag a node and it stays exactly where you dropped it
   (gold ring); the physics settles around your arrangement. ⌥-click releases
   a pinned node back to the simulation.
