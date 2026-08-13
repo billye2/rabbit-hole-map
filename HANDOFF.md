@@ -1,12 +1,12 @@
 # HANDOFF — Rabbit Hole Map
 
-State of the project as of 2026-08-09, for whoever picks it up next
+State of the project as of 2026-08-13, for whoever picks it up next
 (human or agent). Current version: see `package.json` (never hardcode it
 here — it goes stale).
 
 ## Status
 
-**Store-ready.** All tests green: 16 unit tests (`npm test`) and 16
+**Store-ready.** All tests green: 56 unit tests (`npm test`) and 24
 Playwright e2e tests (`npm run e2e`), plus `npm run lint`
 (eslint + prettier), all enforced by GitHub Actions CI on every push. The
 complete Web Store submission package exists: the latest
@@ -33,58 +33,63 @@ once uploaded.
 
 The MV3 service worker (`src/background.ts`) listens to
 `webNavigation.onCommitted` / `onHistoryStateUpdated` and turns navigations
-into a graph stored in `chrome.storage.local` (one `session:<id>` key per
-session, plus a `sessionIndex`). Cross-tab attribution works by remembering
-each tab's last URL in `chrome.storage.session` and, when a tab is created
-with an `openerTabId`, crediting the opener's URL as the edge source. The map
-page (`src/map/`) renders the session as SVG with a hand-rolled O(n²) force
-simulation and live-updates via `chrome.storage.onChanged`.
+into a graph persisted through the Session Store (`src/storage.ts`, the one
+module that talks to `chrome.storage`; key names live in `src/schema.ts`).
+Cross-tab attribution works by remembering each tab's last URL in tab state
+and, when a tab is created with an `openerTabId`, crediting the opener's URL
+as the edge source. The map page (`src/map/`) renders the session as SVG
+with a hand-rolled O(n²) force simulation and live-updates via the store's
+typed change stream. The domain vocabulary is in `CONTEXT.md`; pure logic
+(model / gameplay / schema / storage / force / view) is emitted as
+`dist/*.mjs` for `node --test`.
 
 ## Design decisions worth knowing
 
-- **`src/model.ts` is deliberately pure** (no `chrome.*`) so the graph logic
-  is unit-testable in plain Node. esbuild emits it separately as
-  `dist/model.mjs` for the tests. Keep it that way.
-- **All service-worker event handlers funnel through a promise queue**
-  (`enqueue` in background.ts) because each does read-modify-write on shared
-  storage keys and MV3 handlers interleave.
-- **No runtime dependencies at all.** Force layout and sound effects are
-  hand-rolled. MV3 CSP forbids remote code anyway. (Dev-time deps are fine —
-  nothing ships in the extension.)
-- **Sessions split on a 30-minute gap** (`SESSION_GAP_MS` in model.ts).
-- **Edges are only created for `link`/`form_submit`/`client_redirect`
-  transitions** (plus opener attribution); typed URLs and omnibox searches
-  start new roots on purpose.
-- **Pinning**: dragged nodes get `pinned = true` permanently (gold ring,
-  ⌥-click to release). Pinned nodes shed velocity in `force.ts#tick` so the
-  sim still settles. Pin state lives only in the in-page sim — it does not
-  survive a page reload. That's a known acceptable gap.
+The load-bearing decisions are ADRs in `docs/adr/` — architecture reviews
+should read those before proposing changes:
+
+- ADR-0001 pure logic lives in chrome-free modules
+- ADR-0002 service-worker handlers funnel through a promise queue
+- ADR-0003 no runtime dependencies
+- ADR-0004 sessions split on a 30-minute gap
+- ADR-0005 edges only for link/form_submit/client_redirect
+- ADR-0006 the unit-test seam is the esbuild ESM emit
+- ADR-0007 live arrival is signalled by the store, never inferred
+
+Codebase notes that aren't ADRs:
+
+- **Pinning**: dragged nodes get pinned permanently (gold ring, ⌥-click to
+  release; the sim's `place`/`pin`/`release` are the only ways to move a
+  node). Pinned nodes shed velocity in `force.ts#tick` so the sim still
+  settles. Pin state lives only in the in-page sim — it does not survive a
+  page reload. That's a known acceptable gap.
 - **Sound** (`src/map/audio.ts`): Web Audio square-wave "coin" blips climbing
-  a pentatonic scale; combo resets after 2s of quiet. `soundArmed` guards
-  against a blip barrage when a session first renders. Mute persists in the
-  map page's `localStorage` (`rhm-muted`).
-- **Untangle mode** (`model.ts#tidyLayout` + map.ts): parent = source of each
-  node's earliest incoming edge (cycle-guarded), depth → column, leaves get
-  distinct rows, parents center over children; the map freezes all sim nodes
-  onto that grid and zoom-fits. `userPinned` (gold rings) is tracked
-  separately from sim-level `pinned` precisely because untangle pins
-  everything — don't collapse the two.
+  a pentatonic scale; combo resets after 2s of quiet. Blips and carrots play
+  only for live arrivals (ADR-0007). Mute persists in the map page's
+  `localStorage` (`rhm-muted`).
+- **Untangle mode** (`view.ts#tidyLayout` + `untanglePositions`): parent =
+  source of each node's earliest incoming edge (cycle-guarded), depth →
+  column, leaves get distinct rows, parents center over children; the map
+  freezes all sim nodes onto that grid and zoom-fits. `userPinned` (gold
+  rings) is tracked separately from sim-level pinning precisely because
+  untangle pins everything — don't collapse the two.
 - **Icon**: a white rabbit peeking from its hole. Source of truth is
   `icons/icon.svg`; `npm run icons` rasterizes 16/32/48/128 PNGs via resvg
   (`gen-icons.mjs` — it replaced a hand-rolled analytic PNG encoder with
   identical geometry). The store icon and promo tiles derive from it —
   regenerate assets after icon changes.
-- **The rabbit** (`src/map/rabbit.ts`): screen-space burrow layer with an
-  idle/roam/alert/chase/eat state machine ticked from the map's rAF loop.
-  Live-added sites drop carrots (same `soundArmed` guard as the blips).
-  Progression is pure and unit-tested in model.ts: `rabbitGrowth` (+25%
-  compounding at 5/10/20/40/60 eaten, 1.5x bites after the first
-  milestone), `hungerShrink` (-10% per 30s unfed, floors at 1.0). A
-  milestone triggers a 10s monster frenzy (fangs/red eyes/aura via
-  `setMonster`, 2x hops and bites, no alert pause). Chase locks ONE carrot
-  and arrives by distance tolerance — never a facing-dependent point
-  (regression: dithering between close carrots). Progress is per-page-load
-  by design.
+- **The rabbit**: behaviour is the pure Gameplay Step
+  (`src/map/gameplay.ts`, `stepRabbit(state, input) → {state, events}` with
+  clock/rng/viewport injected); `src/map/rabbit.ts` is the paint adapter
+  that ticks it from the map's rAF loop, plays its events, and draws the
+  SVG. Live-arrived sites drop carrots. Growth: +25% per milestone
+  (5/10/20/40/60 eaten), compounding on the rabbit's _current_ size —
+  hunger shrink (-10% per 30s unfed, floors at 1.0) carries forward, so
+  the rule is path-dependent. A milestone triggers a 10s monster frenzy
+  (fangs/red eyes/aura, 2x hops and bites, no alert pause). Chase locks
+  ONE carrot and arrives by distance tolerance — never a facing-dependent
+  point (regression: dithering between close carrots). Progress is
+  per-page-load by design.
 
 ## Known quirks / bugs already fixed once (don't regress)
 
@@ -142,8 +147,9 @@ Never upload a zip whose version the store has already seen; bump first
 Every user-facing behavior gets an e2e test. The suite is `@playwright/test`
 (10block's pattern): `e2e/fixtures.mjs` provides a persistent context with
 the extension loaded, the extension id, and a local test site; specs are
-split by area (tracking / map / untangle / rabbit / session / popup — 16
-tests, ~40s plus a 3-minute hunger-decay soak). Two more tiers ride the same
+split by area (tracking / map / untangle / rabbit / session / popup — 17
+tests, ~40s plus a 3-minute hunger-decay soak; the rabbit's gameplay also
+has fast unit coverage via `dist/gameplay.mjs`). Two more tiers ride the same
 fixtures: `e2e/a11y.spec.mjs` (axe scans of all three pages; per-element,
 dated exceptions only — currently just the wordmark contrast) and
 `e2e/visual.spec.mjs` (4 screenshot assertions on deterministic surfaces —
@@ -171,6 +177,10 @@ harness has caught five real bugs so far — extend it with every feature.
   `marketing/store/promo-video.webm`, regenerated via `npm run assets:video`).
 - Persist pinned positions and untangle state per session (both currently
   reset on page reload / session switch).
+- Parked refactors from the 2026-08-13 architecture review: keyed DOM
+  reconcile in `rebuild()` (stop the full teardown per live update) and
+  splitting `audio.ts` into a pure combo ladder + speaker adapter (fold in
+  whenever audio next changes).
 - Achievements ("visited 50 pages after midnight"), 1-UP jingle at depth
   milestones.
 - Share/export replay as animated GIF.
