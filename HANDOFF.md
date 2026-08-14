@@ -1,6 +1,6 @@
 # HANDOFF — Rabbit Hole Map
 
-State of the project as of 2026-08-13, for whoever picks it up next
+State of the project as of 2026-08-14, for whoever picks it up next
 (human or agent). Current version: see `package.json` (never hardcode it
 here — it goes stale).
 
@@ -12,7 +12,9 @@ Playwright e2e tests (`npm run e2e`), plus `npm run lint`
 complete Web Store submission package exists: the latest
 `release/rabbit-hole-map-<version>.zip`, listing copy in
 `docs/STORE_LISTING.md`, assets in `marketing/store/` (screenshots, tiles,
-promo video), privacy docs in place. Not yet uploaded to the store.
+promo video), privacy docs in place. Not yet uploaded to the store —
+and the upload is **on hold** until the sprite redesign lands (see Ideas)
+and `marketing/store/` is regenerated to match.
 
 ### Versions: live / queued / skipped
 
@@ -24,11 +26,22 @@ promo video), privacy docs in place. Not yet uploaded to the store.
 | 1.2.5   | v1.2.5     | ✓   | skipped (superseded before upload)              |
 | 1.2.6   | v1.2.6     | ✓   | skipped (superseded by the SEO-title release)   |
 | 1.2.7   | v1.2.7     | ✓   | skipped (superseded before upload)              |
-| 1.2.8   | v1.2.8     | ✓   | **queued — upload this one** (nothing live yet) |
+| 1.2.8   | v1.2.8     | ✓   | skipped (superseded by the mech-rabbit release) |
+| 1.2.9   | see below  | ✓   | **hold — sprite redesign + asset regen first**  |
 
 Keep this table current: versions superseded before reaching the store get
 tags but no store upload. Record the submission date + review outcome here
 once uploaded.
+
+1.2.9's release commit (`58c18f5`, with the zip) is pushed to main, but the
+remote session's git proxy refuses tag pushes, so the `v1.2.9` tag exists
+only in that session. Recreate + push it from any full clone, then create
+the GitHub release (also blocked there — no `gh`):
+
+```
+git tag -a v1.2.9 -m "Release v1.2.9" 58c18f5 && git push origin v1.2.9
+gh release create v1.2.9 release/rabbit-hole-map-1.2.9.zip --title v1.2.9 --verify-tag --notes-file <(CHANGELOG 1.2.9 section)
+```
 
 ## How it works, in one paragraph
 
