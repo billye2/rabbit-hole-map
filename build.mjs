@@ -13,6 +13,9 @@ await esbuild.build({
   target: 'chrome120',
   sourcemap: false,
   logLevel: 'info',
+  // Sprite frames ride inside the bundle as data URLs: no manifest entries,
+  // no web_accessible_resources, and the PNG export's SVG clone keeps them.
+  loader: { '.png': 'dataurl' },
 });
 
 // ESM build of the pure modules for node --test. Adding an entry point here

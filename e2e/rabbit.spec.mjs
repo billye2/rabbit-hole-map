@@ -38,18 +38,28 @@ test('a live-added site drops a crate and the rabbit cranks it open', async ({ c
   await expect(map.locator('#burrow-layer .crate')).toHaveCount(0, { timeout: 15000 });
 });
 
-test('replaying an old session drops no crates: history is not a supply line', async ({ context, extensionId }) => {
+test('replay is a supply line: replayed history drops crates, every run', async ({ context, extensionId }) => {
+  test.setTimeout(120_000);
   const map = await openMap(context, extensionId);
   await seedFixedSession(map);
   await map.reload();
   await expect(map.locator('#nodes .node')).not.toHaveCount(0);
 
   await map.click('#replay-play'); // start over: nodes pop back in one by one
-  await map.waitForTimeout(2500); // a few replay hops at 650ms each
-  await expect(map.locator('#burrow-layer .crate')).toHaveCount(0);
+  await expect(map.locator('#burrow-layer .crate')).not.toHaveCount(0, { timeout: 8000 });
+
+  // Let the run finish (back to live), then run it again: the faucet refills.
+  await map.waitForFunction(
+    () =>
+      document.querySelector('#replay-label')?.textContent === 'live' &&
+      document.querySelectorAll('#burrow-layer .crate').length === 0,
+    { timeout: 60_000 },
+  );
+  await map.click('#replay-play');
+  await expect(map.locator('#burrow-layer .crate')).not.toHaveCount(0, { timeout: 8000 });
 });
 
-test('the 5th crate triggers overdrive, +25% growth, and ear plating', async ({ context, extensionId, site }) => {
+test('the 5th crate triggers overdrive, +25% growth, and the phase-1 marker', async ({ context, extensionId, site }) => {
   test.setTimeout(120_000);
   const page = await context.newPage();
   await page.goto(site + '/');
@@ -62,11 +72,11 @@ test('the 5th crate triggers overdrive, +25% growth, and ear plating', async ({ 
     await new Promise((r) => setTimeout(r, 700));
   }
 
-  // The milestone must light the overdrive aura mid-feast.
+  // The milestone must flip the overdrive marker mid-feast.
   let sawOverdrive = false;
   for (let i = 0; i < 120 && !sawOverdrive; i++) {
     sawOverdrive = await map.evaluate(
-      () => document.querySelector('#burrow-layer .rabbit .aura')?.getAttribute('opacity') === '0.3',
+      () => document.querySelector('#burrow-layer .rabbit')?.getAttribute('data-overdrive') === '1',
     );
     if (!sawOverdrive) await new Promise((r) => setTimeout(r, 250));
   }
@@ -83,8 +93,8 @@ test('the 5th crate triggers overdrive, +25% growth, and ear plating', async ({ 
     { timeout: 90_000, polling: 500 },
   );
 
-  // Overdrive wears off (aura out) — but the phase-1 ear plating stays bolted on.
-  await map.waitForFunction(() => document.querySelector('#burrow-layer .rabbit .aura')?.getAttribute('opacity') === '0', {
+  // Overdrive wears off — but the phase-1 marker stays lit.
+  await map.waitForFunction(() => document.querySelector('#burrow-layer .rabbit')?.getAttribute('data-overdrive') === '0', {
     timeout: 15_000,
     polling: 500,
   });

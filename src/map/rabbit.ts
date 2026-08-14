@@ -19,14 +19,101 @@ import {
   type Viewport,
 } from './gameplay.js';
 import { playClank, playPowerup, playPowerdown } from './audio.js';
+import baseIdle0 from './sprites/front-0.png';
+import baseIdle1 from './sprites/front-1.png';
+import baseIdle2 from './sprites/front-2.png';
+import baseIdle3 from './sprites/front-3.png';
+import baseWalk0 from './sprites/side-0.png';
+import baseWalk1 from './sprites/side-1.png';
+import baseWalk2 from './sprites/side-2.png';
+import baseWalk3 from './sprites/side-3.png';
+import cannonIdle0 from './sprites/cannon-idle-0.png';
+import cannonIdle1 from './sprites/cannon-idle-1.png';
+import cannonWalk0 from './sprites/cannon-walk-0.png';
+import cannonWalk1 from './sprites/cannon-walk-1.png';
+import cannonWalk2 from './sprites/cannon-walk-2.png';
+import battleIdle0 from './sprites/battle-idle-0.png';
+import battleIdle1 from './sprites/battle-idle-1.png';
+import battleIdle2 from './sprites/battle-idle-2.png';
+import battleWalk0 from './sprites/battle-walk-0.png';
+import battleWalk1 from './sprites/battle-walk-1.png';
+import battleWalk2 from './sprites/battle-walk-2.png';
+import battleWalk3 from './sprites/battle-walk-3.png';
+import battleWalk4 from './sprites/battle-walk-4.png';
+import battleWalk5 from './sprites/battle-walk-5.png';
+import jeepIdle0 from './sprites/jeep-idle-0.png';
+import jeepIdle1 from './sprites/jeep-idle-1.png';
+import jeepIdle2 from './sprites/jeep-idle-2.png';
+import jeepIdle3 from './sprites/jeep-idle-3.png';
+import jeepWalk0 from './sprites/jeep-walk-0.png';
+import jeepWalk1 from './sprites/jeep-walk-1.png';
+import jeepWalk2 from './sprites/jeep-walk-2.png';
+import jeepWalk3 from './sprites/jeep-walk-3.png';
+import tankIdle0 from './sprites/tank-idle-0.png';
+import tankIdle1 from './sprites/tank-idle-1.png';
+import tankIdle2 from './sprites/tank-idle-2.png';
+import tankWalk0 from './sprites/tank-walk-0.png';
+import tankWalk1 from './sprites/tank-walk-1.png';
+import tankWalk2 from './sprites/tank-walk-2.png';
 
 const SVGNS = 'http://www.w3.org/2000/svg';
+
+// The rabbit's sprite forms — one per milestone from phase 2 up: base gold
+// (0-1), gold + cannon (2), grey battle armor (3), the jeep (4), and the
+// gold tank at peak (5). `flip` is the frame art's native facing (side
+// frames face right = 1, left = -1); the root transform's dir flip composes
+// with it. `h` is display height at scale 1; width follows the frame's
+// aspect (`aspect` = frame w / h).
+interface SpriteForm {
+  idle: string[];
+  walk: string[];
+  flip: 1 | -1;
+  h: number;
+  aspect: number;
+}
+const FORMS: SpriteForm[] = [
+  {
+    idle: [baseIdle0, baseIdle1, baseIdle2, baseIdle3],
+    walk: [baseWalk0, baseWalk1, baseWalk2, baseWalk3],
+    flip: 1,
+    h: 72,
+    aspect: 103 / 139,
+  },
+  {
+    // The cannon sheet only has two clean front frames; the third is a
+    // back view, so the idle cycle is two-beat.
+    idle: [cannonIdle0, cannonIdle1],
+    walk: [cannonWalk0, cannonWalk1, cannonWalk2],
+    flip: -1,
+    h: 74,
+    aspect: 99 / 147,
+  },
+  {
+    idle: [battleIdle0, battleIdle1, battleIdle2],
+    walk: [battleWalk0, battleWalk1, battleWalk2, battleWalk3, battleWalk4, battleWalk5],
+    flip: 1,
+    h: 74,
+    aspect: 1,
+  },
+  {
+    idle: [jeepIdle0, jeepIdle1, jeepIdle2, jeepIdle3],
+    walk: [jeepWalk0, jeepWalk1, jeepWalk2, jeepWalk3],
+    flip: -1,
+    h: 78,
+    aspect: 128 / 152,
+  },
+  {
+    idle: [tankIdle0, tankIdle1, tankIdle2],
+    walk: [tankWalk0, tankWalk1, tankWalk2],
+    flip: 1,
+    h: 80,
+    aspect: 136 / 129,
+  },
+];
+const formForPhase = (phase: number): SpriteForm => FORMS[Math.max(0, Math.min(phase - 1, FORMS.length - 1))];
 const NAVY = '#2b2857';
 const WHITE = '#ffffff';
-const PINK = '#ff9eb5';
-const ORANGE = '#ff9f1c';
 const LEAF = '#06d6a0';
-const MECH_RED = '#ff2244';
 const STEEL = '#b8c4d9';
 const STEEL_DARK = '#7d8aa5';
 const GOLD = '#ffd166';
@@ -67,114 +154,37 @@ interface RabbitParts {
   root: SVGGElement;
   squash: SVGGElement;
   bubble: SVGGElement;
-  eye: SVGCircleElement;
-  aura: SVGEllipseElement;
   armorGroups: SVGGElement[];
-  visor: SVGRectElement;
-  flames: SVGPathElement;
-  antennaTip: SVGCircleElement;
+  imgWrap: SVGGElement;
+  img: SVGImageElement;
 }
 
 function buildRabbit(parent: SVGGElement): RabbitParts {
-  const root = el('g', { class: 'rabbit' }, parent);
+  const root = el('g', { class: 'rabbit', 'data-overdrive': 0 }, parent);
   const squash = el('g', {}, root);
   // Origin is the rabbit's ground contact point; the sprite is drawn upward.
-  // Energy aura behind everything — invisible until overdrive.
-  const aura = el('ellipse', { class: 'aura', cx: 2, cy: -22, rx: 34, ry: 32, fill: ENERGY, opacity: 0 }, squash);
-  el('circle', { cx: -15, cy: -12, r: 5, fill: WHITE }, squash); // tail
-  el('ellipse', { cx: 0, cy: -13, rx: 16, ry: 12, fill: WHITE }, squash); // body
-  // ears (behind the head), slightly splayed
-  el('rect', { x: 3, y: -55, width: 7, height: 24, rx: 3.5, fill: WHITE, transform: 'rotate(-8 6.5 -43)' }, squash);
-  el('rect', { x: 13, y: -54, width: 7, height: 24, rx: 3.5, fill: WHITE, transform: 'rotate(8 16.5 -42)' }, squash);
-  el('rect', { x: 5, y: -52, width: 3, height: 17, rx: 1.5, fill: PINK, transform: 'rotate(-8 6.5 -43)' }, squash);
-  el('rect', { x: 15, y: -51, width: 3, height: 17, rx: 1.5, fill: PINK, transform: 'rotate(8 16.5 -42)' }, squash);
-  el('circle', { cx: 10, cy: -27, r: 10.5, fill: WHITE }, squash); // head
-  const eye = el('circle', { class: 'eye', cx: 13, cy: -29, r: 1.7, fill: NAVY }, squash); // eye
-  el('circle', { cx: 20, cy: -26, r: 1.8, fill: PINK }, squash); // nose
-  el('ellipse', { cx: 8, cy: -2.5, rx: 6, ry: 2.5, fill: WHITE }, squash); // front paw
+  // The body is a bitmap frame from the current sprite form; imgWrap holds
+  // the form's native-facing flip so the root's dir flip stays universal.
+  // Size/position attributes are stamped whenever the form changes.
+  const imgWrap = el('g', {}, squash);
+  const img = el('image', { 'image-rendering': 'pixelated' }, imgWrap);
 
-  // Armor: one <g> per phase, bolted on cumulatively — armor-N appears at
-  // phase N and stays (phase never decreases; it derives from crates opened).
+  // Milestone markers: one <g> per phase, lit cumulatively — armor-N turns
+  // visible at phase N and stays (phase never decreases; it derives from
+  // crates opened). The VISUAL of each milestone is the sprite form swap
+  // (and the growth pulse); these groups carry no geometry — they exist so
+  // phase is inspectable in the DOM (and e2e-pinned).
   const armorGroups: SVGGElement[] = [];
-  const armor = (n: number): SVGGElement => {
-    const g = el('g', { class: `armor armor-${n}`, visibility: 'hidden' }, squash);
-    armorGroups.push(g);
-    return g;
-  };
-
-  // Phase 1: ear plating + rivets, reusing the exact ear transforms.
-  const a1 = armor(1);
-  const earPlateL = el('g', { transform: 'rotate(-8 6.5 -43)' }, a1);
-  el(
-    'rect',
-    { x: 3.5, y: -54.5, width: 6, height: 14, rx: 3, fill: STEEL, stroke: STEEL_DARK, 'stroke-width': 0.8 },
-    earPlateL,
-  );
-  el('circle', { cx: 6.5, cy: -47.5, r: 0.8, fill: STEEL_DARK }, earPlateL);
-  const earPlateR = el('g', { transform: 'rotate(8 16.5 -42)' }, a1);
-  el(
-    'rect',
-    { x: 13.5, y: -53.5, width: 6, height: 14, rx: 3, fill: STEEL, stroke: STEEL_DARK, 'stroke-width': 0.8 },
-    earPlateR,
-  );
-  el('circle', { cx: 16.5, cy: -46.5, r: 0.8, fill: STEEL_DARK }, earPlateR);
-
-  // Phase 2: chest plate with a glowing core.
-  const a2 = armor(2);
-  el('ellipse', { cx: 2, cy: -11, rx: 11, ry: 8, fill: STEEL, stroke: STEEL_DARK, 'stroke-width': 1 }, a2);
-  el('circle', { cx: -6, cy: -13, r: 0.8, fill: STEEL_DARK }, a2); // bolt
-  el('circle', { cx: 10, cy: -13, r: 0.8, fill: STEEL_DARK }, a2); // bolt
-  el('circle', { class: 'core', cx: 2, cy: -13, r: 2.5, fill: ENERGY }, a2);
-
-  // Phase 3: cyan visor over the eye (overdrive recolors it).
-  const a3 = armor(3);
-  const visor = el(
-    'rect',
-    {
-      class: 'visor',
-      x: 8,
-      y: -33,
-      width: 12,
-      height: 7,
-      rx: 3,
-      fill: ENERGY,
-      stroke: STEEL_DARK,
-      'stroke-width': 0.8,
-      opacity: 0.9,
-    },
-    a3,
-  );
-
-  // Phase 4: back thrusters; flames only show during overdrive.
-  const a4 = armor(4);
-  el('rect', { x: -21, y: -26, width: 6, height: 12, rx: 2, fill: STEEL_DARK }, a4);
-  el('rect', { x: -15, y: -30, width: 5, height: 10, rx: 2, fill: STEEL_DARK }, a4);
-  const flames = el(
-    'path',
-    {
-      class: 'flames',
-      d: 'M -20.5 -13 l 2.5 7 l 2.5 -7 z M -14.5 -19 l 2 6 l 2 -6 z',
-      fill: ORANGE,
-      visibility: 'hidden',
-    },
-    a4,
-  );
-
-  // Phase 5: head dome + paw guard + antenna with a glowing tip.
-  const a5 = armor(5);
-  el('ellipse', { cx: 10, cy: -32, rx: 10, ry: 6, fill: STEEL, stroke: STEEL_DARK, 'stroke-width': 1 }, a5);
-  el('ellipse', { cx: 8, cy: -2.5, rx: 6.5, ry: 2.8, fill: STEEL, stroke: STEEL_DARK, 'stroke-width': 0.8 }, a5);
-  el('rect', { x: 9.4, y: -46, width: 1.2, height: 9, fill: STEEL_DARK }, a5);
-  const antennaTip = el('circle', { class: 'antenna-tip', cx: 10, cy: -47, r: 1.8, fill: ENERGY }, a5);
+  for (let n = 1; n <= 5; n++) armorGroups.push(el('g', { class: `armor armor-${n}`, visibility: 'hidden' }, squash));
 
   // "!" alert bubble
   const bubble = el('g', { class: 'alert-bubble', visibility: 'hidden' }, root);
-  el('rect', { x: -9, y: -86, width: 18, height: 22, rx: 7, fill: WHITE, stroke: NAVY, 'stroke-width': 2 }, bubble);
+  el('rect', { x: -9, y: -104, width: 18, height: 22, rx: 7, fill: WHITE, stroke: NAVY, 'stroke-width': 2 }, bubble);
   el(
     'text',
     {
       x: 0,
-      y: -69,
+      y: -87,
       'text-anchor': 'middle',
       fill: NAVY,
       'font-size': 16,
@@ -183,7 +193,7 @@ function buildRabbit(parent: SVGGElement): RabbitParts {
     },
     bubble,
   ).textContent = '!';
-  return { root, squash, bubble, eye, aura, armorGroups, visor, flames, antennaTip };
+  return { root, squash, bubble, armorGroups, imgWrap, img };
 }
 
 function buildCrate(parent: SVGGElement, tier: number): { el: SVGGElement; scaleEl: SVGGElement } {
@@ -216,7 +226,7 @@ export function initRabbit(svg: SVGSVGElement): RabbitLayer {
   const layer = el('g', { id: 'burrow-layer', 'pointer-events': 'none' }, svg as unknown as SVGGElement);
   const ground = el('rect', { x: -20, y: 0, width: 40, height: 26, rx: 12, fill: LEAF, opacity: 0.35 }, layer);
   const crateG = el('g', {}, layer);
-  const { root: rabbitEl, squash, bubble, eye, aura, armorGroups, visor, flames, antennaTip } = buildRabbit(layer);
+  const { root: rabbitEl, squash, bubble, armorGroups, imgWrap, img } = buildRabbit(layer);
 
   const viewport = (): Viewport => ({ width: window.innerWidth, height: window.innerHeight });
   let state: RabbitState = initialRabbitState(viewport());
@@ -225,6 +235,8 @@ export function initRabbit(svg: SVGSVGElement): RabbitLayer {
   let paintedPhase = -1;
   let paintedOverdrive = false;
   let paintedAlert = false;
+  let paintedForm: SpriteForm | null = null;
+  let paintedHref = '';
 
   const SOUNDS: Record<GameEvent, () => void> = { clank: playClank, powerup: playPowerup, powerdown: playPowerdown };
 
@@ -239,12 +251,35 @@ export function initRabbit(svg: SVGSVGElement): RabbitLayer {
     armorGroups.forEach((g, i) => g.setAttribute('visibility', i < phase ? 'visible' : 'hidden'));
   }
 
+  // No dedicated overdrive visuals (by request — the sprites carry the
+  // look): overdrive reads as the double-speed rampage. The data attribute
+  // keeps the state inspectable in the DOM (and e2e-pinned).
   function setOverdrive(on: boolean): void {
-    eye.setAttribute('fill', on ? MECH_RED : NAVY);
-    eye.setAttribute('r', on ? '2.6' : '1.7');
-    visor.setAttribute('fill', on ? MECH_RED : ENERGY);
-    flames.setAttribute('visibility', on ? 'visible' : 'hidden');
-    aura.setAttribute('opacity', on ? '0.3' : '0');
+    rabbitEl.setAttribute('data-overdrive', on ? '1' : '0');
+  }
+
+  // Project the state onto a sprite frame: which form (by phase), which
+  // strip (walk while moving or cranking, idle otherwise), which frame
+  // (time-cycled — hops are short enough that a clock drives the gait).
+  function paintSprite(now: number): void {
+    const form = formForPhase(state.phase);
+    if (form !== paintedForm) {
+      paintedForm = form;
+      const w = form.h * form.aspect;
+      img.setAttribute('width', String(w));
+      img.setAttribute('height', String(form.h));
+      img.setAttribute('x', String(-w / 2));
+      img.setAttribute('y', String(-form.h));
+      imgWrap.setAttribute('transform', `scale(${form.flip},1)`);
+    }
+    const moving = state.mode === 'roam' || state.mode === 'chase' || state.mode === 'open';
+    const frames = moving ? form.walk : form.idle;
+    const idx = Math.floor(now / (moving ? 110 : 420)) % frames.length;
+    const href = frames[idx];
+    if (href !== paintedHref) {
+      paintedHref = href;
+      img.setAttribute('href', href);
+    }
   }
 
   function paint(now: number): void {
@@ -289,15 +324,8 @@ export function initRabbit(svg: SVGSVGElement): RabbitLayer {
       paintedOverdrive = overdriveOn;
       setOverdrive(overdriveOn);
     }
-    if (overdriveOn) {
-      // Pulsing energy aura while overdrive is hot.
-      aura.setAttribute('rx', String(34 + Math.sin(now / 110) * 5));
-      aura.setAttribute('ry', String(32 + Math.cos(now / 130) * 4));
-    }
-    if (state.phase >= 5) {
-      // The full-mech antenna beacon breathes.
-      antennaTip.setAttribute('opacity', String(0.6 + 0.4 * Math.sin(now / 150)));
-    }
+
+    paintSprite(now);
 
     const gy = window.innerHeight - GROUND_LIFT;
     const size = displaySize(state, now);
