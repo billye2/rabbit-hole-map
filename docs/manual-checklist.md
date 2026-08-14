@@ -25,7 +25,7 @@ sweep this before every store upload.
 - [ ] Hover a node → speech-bubble tooltip; hover HUD controls → state-aware tooltips
 - [ ] Double-click a node → that page opens in a new tab
 - [ ] Drag a node → it pins where dropped (gold ring), physics settles around it; ⌥-click releases it
-- [ ] ▶ Replay → trail replays hop by hop with ascending blips; scrubber drags work; "live" resumes at the end
+- [ ] ▶ Replay → trail replays hop by hop (silent — no blips); every revealed node drops a crate; scrubber drags work; "live" resumes at the end; pressing ▶ again re-drops the crates (the faucet refills)
 - [ ] Untangle → tidy left-to-right lanes, auto zoom-to-fit; click again → physics returns; gold rings survive both modes
 - [ ] 🎵/🙉 mute toggle silences all blips and persists across reloads
 - [ ] Export PNG → downloaded image shows the constellation incl. pinned rings
@@ -33,10 +33,12 @@ sweep this before every store upload.
 
 ## Rabbit
 
-- [ ] Rabbit roams the grass; a live-visited site drops a crate from its node; rabbit alerts (❗), chases, cranks it open in three clanks
-- [ ] 5th crate → 10-second overdrive (red eye, energy aura, servo power-up, double speed), then it calms down bigger (+25%) with ear plating bolted on — armor stays after overdrive ends
+- [ ] Sprite rabbit roams the grass (front-facing frames when idle, side-walk frames while moving, flips with direction — no frame should face the wrong way mid-cycle); any visited site (new OR revisited) drops a crate from its node; rabbit alerts (❗), chases, cranks it open in three clanks
+- [ ] Opening the map on a fresh session drops catch-up crates for recently visited pages
+- [ ] 5th crate → 10-second overdrive (servo power-up chord, double speed — no aura/flames overlays), then it calms down bigger (+25%)
+- [ ] Milestones evolve the form permanently: cannon at 10, battle armor + sword at 20, jeep at 40, tank at 60 (farmable via replay); no stray lines, dots, or fragments on any frame
 - [ ] After the 5th crate, new drops are Iron crates (steel-blue) instead of Wooden (brown) — a crate already on the ground keeps its old look
-- [ ] No crates for 30s → rabbit shrinks 10% at a time, never below original size; opening a crate resets the clock (armor never comes off)
+- [ ] No crates for 30s → rabbit shrinks 10% at a time, never below original size; opening a crate resets the clock (the evolved form never reverts)
 
 ## Popup & housekeeping
 
