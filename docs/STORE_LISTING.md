@@ -44,9 +44,20 @@ a new zip + review round, so keep it stable. The repo/dev name stays plain
 > **Replay the descent**
 >
 > Hit ▶ Replay and watch your session rebuild itself in order, node by node,
-> each one bouncing in with its own rising coin-blip — like a level intro for
-> your own curiosity. Scrub the timeline to any moment. Then double-click any
-> star to jump back into that page.
+> each one bouncing back in — like a level intro for your own curiosity. Scrub
+> the timeline to any moment, then double-click any star to jump back into
+> that page. Every replayed page also drops a supply crate for the rabbit, so
+> reliving the descent feeds the little guy all over again.
+>
+> **Feed the mech rabbit**
+>
+> A pixel-art mech rabbit patrols the grass at the bottom of the map. Every
+> page you visit drops a supply crate from its star; the rabbit chases it
+> down and cranks it open. Keep the crates coming and it grows — and at 5,
+> 10, 20, 40, and 60 crates it evolves, permanently: gold mech → cannon-armed
+> → grey battle armor with a sword → armored jeep → and at peak, a gold tank.
+> Each milestone kicks off a ten-second double-speed rampage. Stop browsing
+> and it shrinks back down (the tank stays, though — it earned that).
 >
 > **Arrange your burrow**
 >

@@ -32,8 +32,10 @@ them:
 - **Sessions** — a 30-minute pause starts a fresh map, so "tonight's rabbit
   hole" doesn't blur into "this morning's".
 - **Replay** — scrub or play the trail back in chronological order; a full
-  replay re-bounces every node. Replay is a picture of history: coin blips
-  and rabbit crates stay reserved for sites you visit live.
+  replay re-bounces every node. Coin blips stay reserved for live visits,
+  but every node a replay reveals drops a crate for the rabbit — and each
+  fresh run drops them all again. Yes, the replay button is an unlimited
+  crate faucet. That's the point: keep the rabbit fed.
 - **Drag to pin** — drag a node and it stays exactly where you dropped it
   (gold ring); the physics settles around your arrangement. ⌥-click releases
   a pinned node back to the simulation.
@@ -42,20 +44,22 @@ them:
   view auto-zooms to fit. No more hairball on 50-page nights. Click again
   to hand the map back to the physics.
 - **Double-click a node** to reopen that page in a new tab.
-- **A resident mech rabbit** roams the grass at the bottom of the map. Every
-  site you visit live drops a supply crate from its node; the rabbit
-  startles (❗), chases it down, and cranks it open in three clanks. It
-  **grows +25%** at 5, 10, 20, 40, and 60 crates opened — and each of those
-  milestones **bolts on a new piece of mechanical armor**, permanently: ear
-  plating, a chest plate with a glowing core, a cyan visor, back thrusters,
-  and finally full plating with a beacon antenna. Crates level up alongside
-  it — Wooden → Iron → Gold → Energy → Plasma — so the loot on the ground
-  evolves with the rabbit. Hitting a milestone also triggers a **10-second
-  overdrive** — red visor, energy aura, thruster flames, a servo power-up
-  chord — as it rampages at double speed until every crate on the ground is
-  gone. Go 30 seconds without feeding it and low fuel shrinks it 10% at a
-  time, back down to — but never below — its original size (the armor
-  stays on).
+- **A resident mech rabbit** (pixel-art sprite, hand-fed on five sprite
+  sheets) roams the grass at the bottom of the map. Every site you visit —
+  new or revisited — drops a supply crate from its node (and opening the
+  map on a fresh session drops crates for the pages you visited while it
+  was closed); the rabbit startles (❗), chases it down, and cranks it open
+  in three clanks. It **grows +25%** at 5, 10, 20, 40, and 60 crates
+  opened — and from the second milestone on, each one **evolves it into a
+  whole new form**, permanently: gold mech → cannon-armed → grey battle
+  armor with a sword → armored jeep → and at peak, a gold tank. Crates
+  level up alongside it — Wooden → Iron → Gold → Energy → Plasma — so the
+  loot on the ground evolves with the rabbit. Hitting a milestone also
+  triggers a **10-second overdrive** — a servo power-up chord, then a
+  double-speed rampage until every crate on the ground is gone. Go 30
+  seconds without feeding
+  it and low fuel shrinks it 10% at a time, back down to — but never
+  below — its original size (its evolved form stays).
 - **Speech-bubble tooltips** on every map control, with state-aware text
   (the popup keeps its single button self-explanatory, no bubble).
 - **Export PNG** — share the constellation (pinned rings and all).

@@ -12,9 +12,10 @@ Playwright e2e tests (`npm run e2e`), plus `npm run lint`
 complete Web Store submission package exists: the latest
 `release/rabbit-hole-map-<version>.zip`, listing copy in
 `docs/STORE_LISTING.md`, assets in `marketing/store/` (screenshots, tiles,
-promo video), privacy docs in place. Not yet uploaded to the store —
-and the upload is **on hold** until the sprite redesign lands (see Ideas)
-and `marketing/store/` is regenerated to match.
+promo video), privacy docs in place. Not yet uploaded to the store. The
+sprite redesign has **landed** (the user's own pixel-art sheets, see The
+mech rabbit below); the only remaining pre-upload task is regenerating
+`marketing/store/` so the assets show the sprite rabbit.
 
 ### Versions: live / queued / skipped
 
@@ -27,21 +28,13 @@ and `marketing/store/` is regenerated to match.
 | 1.2.6   | v1.2.6     | ✓   | skipped (superseded by the SEO-title release)   |
 | 1.2.7   | v1.2.7     | ✓   | skipped (superseded before upload)              |
 | 1.2.8   | v1.2.8     | ✓   | skipped (superseded by the mech-rabbit release) |
-| 1.2.9   | see below  | ✓   | **hold — sprite redesign + asset regen first**  |
+| 1.2.9   | v1.2.9     | ✓   | skipped (superseded by the sprite-forms release) |
+| 1.3.0   | v1.3.0     | ✓   | **ready — regen `marketing/store/`, then upload** |
 
 Keep this table current: versions superseded before reaching the store get
 tags but no store upload. Record the submission date + review outcome here
-once uploaded.
-
-1.2.9's release commit (`58c18f5`, with the zip) is pushed to main, but the
-remote session's git proxy refuses tag pushes, so the `v1.2.9` tag exists
-only in that session. Recreate + push it from any full clone, then create
-the GitHub release (also blocked there — no `gh`):
-
-```
-git tag -a v1.2.9 -m "Release v1.2.9" 58c18f5 && git push origin v1.2.9
-gh release create v1.2.9 release/rabbit-hole-map-1.2.9.zip --title v1.2.9 --verify-tag --notes-file <(CHANGELOG 1.2.9 section)
-```
+once uploaded. (1.2.9's tag + GitHub release were backfilled 2026-08-14;
+the remote session that cut it couldn't push tags.)
 
 ## How it works, in one paragraph
 
@@ -69,6 +62,8 @@ should read those before proposing changes:
 - ADR-0005 edges only for link/form_submit/client_redirect
 - ADR-0006 the unit-test seam is the esbuild ESM emit
 - ADR-0007 live arrival is signalled by the store, never inferred
+- ADR-0008 crate friction off — every visit feeds the rabbit, replay
+  included (an intentional infinite faucet, at the user's request)
 
 Codebase notes that aren't ADRs:
 
@@ -96,19 +91,39 @@ Codebase notes that aren't ADRs:
   (`src/map/gameplay.ts`, `stepRabbit(state, input) → {state, events}` with
   clock/rng/viewport injected); `src/map/rabbit.ts` is the paint adapter
   that ticks it from the map's rAF loop, plays its events, and draws the
-  SVG. Live-arrived sites drop crates, cranked open in 3 clanks. Growth:
-  +25% per milestone (5/10/20/40/60 opened), compounding on the rabbit's
+  SVG. Visited sites drop crates, cranked open in 3 clanks. Growth: +25%
+  per milestone (5/10/20/40/60 opened), compounding on the rabbit's
   _current_ size — hunger shrink (-10% per 30s unfed, floors at 1.0)
-  carries forward, so the rule is path-dependent. Each milestone is an
-  armor **phase** that bolts a permanent piece onto the sprite (ear
-  plating → chest plate → visor → thrusters → full plating + antenna) and
-  triggers a 10s **overdrive** (red eye/visor, energy aura, flames, 2x
-  hops and cranks, no alert pause). Newly dropped crates carry a **tier**
-  (1–5, Wooden→Plasma) stamped one above the current phase, capped — a
-  crate keeps its tier for life, so mixed tiers can share the ground near
-  a boundary. Chase locks ONE crate and arrives by distance tolerance —
-  never a facing-dependent point (regression: dithering between close
-  crates). Progress is per-page-load by design.
+  carries forward, so the rule is path-dependent. The body is a bitmap
+  **sprite form** (36 PNG frames in `src/map/sprites/`, sliced from the
+  user's five AI-generated sheets, inlined as data URLs by esbuild's
+  dataurl loader — no manifest entries, and the PNG export keeps them).
+  The phase ladder: base gold (0–1) → gold + cannon (2) → grey battle
+  armor + sword (3) → armored jeep (4) → gold tank (5); forms never
+  revert. Idle plays the front-facing strip, movement the side strip; each
+  form's native facing (`flip` in `FORMS`) composes with the movement dir
+  flip. The `armor-N` groups are **empty phase markers** (e2e-pinned DOM
+  state) and overdrive has **no overlay visuals** by the user's explicit
+  request (the old aura disc / flame chevrons / glow dots all read as
+  artifacts on the sprites) — it's exposed as `data-overdrive` on
+  `.rabbit` and reads as the double-speed rampage. Newly dropped crates
+  carry a **tier** (1–5, Wooden→Plasma) stamped one above the current
+  phase, capped — a crate keeps its tier for life. Chase locks ONE crate
+  and arrives by distance tolerance. Progress is per-page-load by design.
+  Sprite-sheet gotchas already handled once (don't regress): sheets carry
+  white/grey backgrounds, grid divider lines, and cross-cell bleed —
+  frames were keyed, inset, largest-component-filtered, and one
+  wrong-facing tank frame mirrored; if new sheets arrive, reuse that
+  pipeline rather than trusting cell boundaries.
+- **Crate friction is OFF** (ADR-0008): the store's change stream names
+  re-visited nodes too (visit-count diff, `src/storage.ts`); opening a
+  still-fresh session drops catch-up crates for its most recent pages
+  (`greetFreshSession`, once per session per page load); replay drops a
+  crate for every node it reveals and re-runs re-drop everything
+  (`feedFromReplay` + `replayFedIds`) — the replay button is a deliberate
+  infinite crate faucet. `MAX_CRATES` (ground + per-burst cap) is 20,
+  exported from `gameplay.ts`. Deliberately unchanged: reloads still don't
+  record visits (data integrity), blocklist still applies.
 
 ## Known quirks / bugs already fixed once (don't regress)
 
@@ -185,18 +200,6 @@ harness has caught five real bugs so far — extend it with every feature.
 
 ## Ideas discussed but not built
 
-- **Sprite redesign — required before the next store upload.** The user's
-  verdict on the mech-rabbit ship: the base rabbit sprite is too cartoonish.
-  Two harder-edged directions are mocked up and pitched (rendered as real
-  SVG against the map's sky/grass): **B "Chassis Scout"** — same silhouette,
-  seamed gunmetal hull panels, antenna-blade ears with joint sockets, sensor
-  lens eye; **C "Combat Frame"** — full angular graphite mecha, blade ears,
-  digitigrade foot, glowing slit visor. Direction not yet chosen (a mix is
-  on the table, e.g. B's body with C's ears). The rewrite is confined to
-  `buildRabbit()`/`buildCrate()` in `src/map/rabbit.ts` (attribute-fill
-  primitives; keep the armor-group/`setArmor`/`setOverdrive` structure) plus
-  the e2e element selectors — no gameplay changes. Regenerate
-  `marketing/store/` after.
 - Upload the latest release to the Web Store (package is ready; still needs
   a developer account). The privacy policy URL is this repo's own copy —
   the repo is public as of 2026-08-09:
@@ -206,9 +209,13 @@ harness has caught five real bugs so far — extend it with every feature.
 - Upload the promo video to YouTube and paste the URL into
   `docs/STORE_LISTING.md` (the video itself exists:
   `marketing/store/promo-video.webm`, regenerated via `npm run assets:video`).
-- Regenerate `marketing/store/` before the next store upload: the current
-  screenshots and promo video predate the mech-rabbit theme and still show
-  carrots (`npm run assets` / `npm run assets:video`).
+- Regenerate `marketing/store/` before the store upload: the current
+  screenshots and promo video predate the sprite rabbit (they still show
+  the old drawn mascot and carrots). `npm run assets` /
+  `npm run assets:video`; needs the CfT binary in `.cache/cft/`.
+- The five source sprite sheets (webp) live only on the user's Desktop
+  (`~/Desktop/17866*.webp`); consider committing them (or the slicing
+  scripts) if the frames ever need re-cutting.
 - Persist pinned positions and untangle state per session (both currently
   reset on page reload / session switch).
 - Parked refactors from the 2026-08-13 architecture review: keyed DOM

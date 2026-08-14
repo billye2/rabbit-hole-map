@@ -18,10 +18,11 @@ thing by them. Architectural decisions behind these terms live in
   index, tab state, the write sequence (**drain signal**), and the typed
   change stream. Everything else — pages, tests, marketing seeders — goes
   through its doors.
-- **Live Arrival** — the fact that a site was visited _just now_, named by
-  the Session Store's change stream as the node ids a write added
-  (ADR-0007). Coin blips and crate drops key off this signal alone;
-  re-renders and replay can never fabricate it.
+- **Live Visit** — the fact that a site was visited _just now_ (a node the
+  write added **or re-visited**), named by the Session Store's change
+  stream (ADR-0007, widened by ADR-0008). Coin blips and live crate drops
+  key off this signal; re-renders can never fabricate it. Replay drops
+  crates through its own separate path (see **Replay**).
 
 ## Map page
 
@@ -30,7 +31,9 @@ thing by them. Architectural decisions behind these terms live in
   Untangle layout, zoom-to-fit, edge-trim geometry. `map.ts` only wires
   these onto SVG, behind an exported `main()` (boot.ts is the only caller).
 - **Replay** — scrubbing or playing the session's timeline. Replay renders
-  history; it never feeds the rabbit or plays sounds.
+  history silently (no coin blips), but it DOES feed the rabbit: every
+  node a replay pass reveals drops a crate, and a fresh run drops them all
+  again — a deliberate crate faucet (ADR-0008).
 - **Untangle** — the tidy per-lane tree layout (vs. the force-directed
   "physics" tangle). Freezes every node onto a grid via sim pinning.
 - **Pinning** — two distinct kinds, deliberately not collapsed: **user
@@ -52,14 +55,22 @@ thing by them. Architectural decisions behind these terms live in
   and never changes afterward.
 - **Milestone / Phase** — crate counts (5/10/20/40/60) that grow the
   rabbit +25%, compounding on its _current_ size (hunger shrink carries
-  forward — the growth rule is path-dependent). Each phase bolts a new
-  piece of mechanical armor onto the rabbit, permanently: ear plating,
-  chest plate + core, visor, thrusters, full plating + antenna.
-- **Overdrive** — the 10-second surge a milestone triggers: red eye/visor,
-  energy aura, thruster flames, double-speed hops and cranks, no startle
-  pause.
+  forward — the growth rule is path-dependent). From phase 2 on, each
+  phase swaps the rabbit's **Sprite Form**, permanently.
+- **Sprite Form** (`rabbit.ts` `FORMS`) — the rabbit's body is a bitmap
+  frame (data-URL PNGs sliced from Billy's sprite sheets, inlined by
+  esbuild's dataurl loader). The escalation ladder by phase: base gold
+  (0–1) → gold + cannon (2) → grey battle armor (3) → jeep (4) → gold
+  tank at peak (5). Idle plays the front-facing strip, movement the side
+  strip; each form's native facing (`flip`) composes with the dir flip.
+  The `armor-N` groups remain as phase markers in the DOM (e2e-pinned)
+  but carry no geometry — the form swap IS the milestone visual.
+- **Overdrive** — the 10-second surge a milestone triggers: double-speed
+  hops and cranks, no startle pause. No overlay visuals (by request — the
+  sprites carry the look); the state is exposed as `data-overdrive` on
+  the `.rabbit` group, which e2e pins.
 - **Hunger** — 30 seconds unfed shrinks the rabbit 10% (`powerdown`),
-  never below its original size. Armor never comes off: phase derives
+  never below its original size. A form never reverts: phase derives
   from crates opened, which only grows.
 
 ## Test seam
