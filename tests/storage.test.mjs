@@ -113,9 +113,10 @@ test('onSession streams content updates; onIndex streams the index', async () =>
   assert.equal(indexes[0][0].id, s.id);
 });
 
-// Live arrival: the store diffs oldValue/newValue inside the change event
-// and names the newly-added nodes. Statelessly — replay and re-renders in
-// the map can never fabricate this signal.
+// Live visit: the store diffs oldValue/newValue inside the change event
+// and names the nodes the write visited — newly added or re-visited.
+// Statelessly — replay and re-renders in the map can never fabricate this
+// signal.
 test('onSession names the newly-added node ids (live arrival)', async () => {
   const backend = memoryBackend();
   const store = createSessionStore(backend);
@@ -131,6 +132,13 @@ test('onSession names the newly-added node ids (live arrival)', async () => {
   await store.saveSession(s);
   await flush();
   assert.deepEqual(deliveries[1], ['https://c.com/']);
+
+  // A re-visit bumps the node's visit count — that write names it too:
+  // going back down a familiar hole still feeds the rabbit.
+  applyNavEvent(s, { url: 'https://a.com/', sourceUrl: 'https://c.com/', time: s.end + 50, transition: 'link' });
+  await store.saveSession(s);
+  await flush();
+  assert.deepEqual(deliveries[2], ['https://a.com/']);
 });
 
 test('a content-only update (title patch) has no live arrivals', async () => {

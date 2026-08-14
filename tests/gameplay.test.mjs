@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   GROUND_LIFT,
   HUNGER_INTERVAL_MS,
+  MAX_CRATES,
   crateTier,
   displaySize,
   hungerShrink,
@@ -195,11 +196,11 @@ test('an unfed rabbit shrinks 10% every 30s, and the clock keeps ticking at the 
   assert.equal(r.state.nextHungerAt, 5000 + 2 * HUNGER_INTERVAL_MS);
 });
 
-test('the ground never becomes a crate warehouse: capped at 12, oldest evicted', () => {
+test('the ground never becomes a crate warehouse: capped at MAX_CRATES, oldest evicted', () => {
   const s = { ...initialRabbitState(VIEW), modeUntil: Infinity };
-  const drops = Array.from({ length: 13 }, (_, i) => ({ x: 100 + i * 60, y: 100 }));
+  const drops = Array.from({ length: MAX_CRATES + 1 }, (_, i) => ({ x: 100 + i * 40, y: 100 }));
   const r = stepRabbit(s, input(1000, { drops }));
-  assert.equal(r.state.crates.length, 12);
+  assert.equal(r.state.crates.length, MAX_CRATES);
   const ids = r.state.crates.map((c) => c.id);
   assert.ok(!ids.includes(1), 'the first-dropped crate was evicted');
 });

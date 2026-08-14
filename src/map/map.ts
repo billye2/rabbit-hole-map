@@ -1,8 +1,9 @@
-import { fmtDuration, type NavEdge, type PageNode, type Session, type SessionMeta } from '../model.js';
+import { SESSION_GAP_MS, fmtDuration, type NavEdge, type PageNode, type Session, type SessionMeta } from '../model.js';
 import * as store from '../storage.js';
 import { ForceSim, hashSeed } from './force.js';
 import { eventTimeline, fitTransform, trimmedEdge, untanglePositions, visibleGraph as visibleAt } from './view.js';
 import { isMuted, playPop, setMuted } from './audio.js';
+import { MAX_CRATES } from './gameplay.js';
 import { initRabbit } from './rabbit.js';
 
 // The whole page lives behind main() — importing this module has no side
@@ -202,17 +203,38 @@ export function main(): void {
     }
   }
 
-  // Live arrivals only — the store names the nodes this very write added, so
-  // opening an old session or scrubbing a replay is never a feast.
+  // Live visits only — the store names the nodes this very write visited
+  // (added or re-visited), so scrubbing a replay is never a feast.
   function celebrateLiveArrivals(ids: string[]): void {
     if (replayCutoff != null) return; // replay renders history; it never feeds the rabbit
     // A burst of new nodes plays as a rising arpeggio, capped so a giant
     // update doesn't turn into a slot machine.
     for (let i = 0; i < Math.min(ids.length, 5); i++) setTimeout(playPop, i * 90);
-    // Every live-added site drops a crate from its node for the rabbit.
+    // Every live-visited site drops a crate from its node for the rabbit.
     const pos = new Map(sim.nodes.map((sn) => [sn.id, sn]));
-    for (const id of ids.slice(0, 12)) {
+    for (const id of ids.slice(0, MAX_CRATES)) {
       const p = pos.get(id);
+      if (p) rabbit.dropCrate(p.x * view.k + view.x, p.y * view.k + view.y);
+    }
+  }
+
+  // Sessions this page load has already greeted with catch-up crates.
+  const greetedSessions = new Set<string>();
+
+  // Browsing done while the map was closed still feeds the rabbit: opening a
+  // session that is FRESH (still inside the live-session gap, so it's the one
+  // accepting writes) drops crates for its most recent pages. Old sessions
+  // and replay remain a picture of history (ADR-0007/0008).
+  function greetFreshSession(): void {
+    if (!session || greetedSessions.has(session.id)) return;
+    if (Date.now() - session.end > SESSION_GAP_MS) return;
+    greetedSessions.add(session.id);
+    const recent = Object.values(session.nodes)
+      .sort((a, b) => b.lastVisit - a.lastVisit)
+      .slice(0, MAX_CRATES);
+    const pos = new Map(sim.nodes.map((sn) => [sn.id, sn]));
+    for (const n of recent) {
+      const p = pos.get(n.id);
       if (p) rabbit.dropCrate(p.x * view.k + view.x, p.y * view.k + view.y);
     }
   }
@@ -364,6 +386,25 @@ export function main(): void {
       replayLabel.textContent = t != null ? fmtTime(t) : 'start';
     }
     rebuild();
+    if (cutoff == null) replayFedIds.clear();
+    else feedFromReplay();
+  }
+
+  // Nodes this replay pass has already fed to the rabbit. Cleared when the
+  // view returns to live, so every fresh replay run is a fresh feast.
+  const replayFedIds = new Set<string>();
+
+  // Replay feeds the rabbit, by request: every node the scrubber reveals
+  // drops a crate, and re-running the replay drops them all over again —
+  // the replay button is a deliberate crate faucet (ADR-0008).
+  function feedFromReplay(): void {
+    const fresh = visibleGraph().nodes.filter((n) => !replayFedIds.has(n.id));
+    const pos = new Map(sim.nodes.map((sn) => [sn.id, sn]));
+    for (const n of fresh.slice(0, MAX_CRATES)) {
+      replayFedIds.add(n.id);
+      const p = pos.get(n.id);
+      if (p) rabbit.dropCrate(p.x * view.k + view.x, p.y * view.k + view.y);
+    }
   }
 
   replayRange.addEventListener('input', () => {
@@ -387,7 +428,10 @@ export function main(): void {
       return;
     }
     let i = replayCutoff != null && replayCutoff < eventTimes.length ? replayCutoff : 0;
-    if (i === 0) seenNodeIds = new Set(); // fresh run: let every node bounce back in
+    if (i === 0) {
+      seenNodeIds = new Set(); // fresh run: let every node bounce back in
+      replayFedIds.clear(); // ...and drop its crate all over again
+    }
     setReplay(i);
     replayPlay.textContent = '⏸ Pause';
     replayPlay.dataset.tip = 'Pause the replay';
@@ -544,6 +588,7 @@ export function main(): void {
     applyView();
     computeTimeline();
     setReplay(null);
+    greetFreshSession();
   }
 
   sessionSelect.addEventListener('change', () => showSession(sessionSelect.value));

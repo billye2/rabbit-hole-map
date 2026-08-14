@@ -1,6 +1,8 @@
 # ADR-0007 — Live arrival is signalled by the Session Store, never inferred
 
-**Status**: accepted 2026-08-13
+**Status**: accepted 2026-08-13 — consequences amended by ADR-0008
+(the signal now also names re-visited nodes, and replay feeds the rabbit
+through its own explicit path; the mechanism below still stands)
 
 ## Context
 

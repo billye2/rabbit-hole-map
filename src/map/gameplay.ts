@@ -75,7 +75,7 @@ export const CRATE_TIER_MAX = 5;
 
 const BASE_CRANK_MS = 260;
 const GROWTH_FACTOR = 1.25; // per phase, compounding on the current size
-const MAX_CRATES = 12;
+export const MAX_CRATES = 20; // ground cap; also the per-burst drop cap in the map
 const ROAM_HOP_MS = 450;
 const CHASE_HOP_MS = 300;
 const ROAM_HOP_LEN = 75;
