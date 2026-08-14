@@ -8,6 +8,26 @@ _next_ version first (preview the number with `npm run bump -- --dry`).
 `npm run release` refuses to run without it, and that section becomes the
 GitHub release notes verbatim via `npm run release:publish`.
 
+## [1.3.0] — 2026-08-14
+
+- **The rabbit is real pixel art now.** The drawn mascot is replaced by 36
+  sprite frames from five hand-made sheets, and each growth milestone
+  evolves it into a whole new form, permanently: base gold mech →
+  cannon-armed (10 crates) → grey battle armor with a sword (20) →
+  armored jeep (40) → and at peak, a gold tank (60). Idle faces you,
+  movement plays the side-walk strip, and the overlay decorations (glow
+  dots, overdrive aura, flame chevrons) are gone — the sprites carry the
+  look, and overdrive reads as the double-speed rampage it always was.
+- **Crate friction is off** (ADR-0008). Every visit feeds the rabbit, not
+  just first visits: revisiting a page drops a crate, opening the map on
+  a fresh session drops catch-up crates for the pages you browsed while
+  it was closed, and **replay is a supply line** — every node a replay
+  reveals drops a crate, and running the replay again drops them all
+  again, by design. The ground now holds up to 20 crates (was 12).
+- Store assets (screenshots, tiles, promo video) regenerated to show the
+  sprite rabbit; the store listing gained a "Feed the mech rabbit"
+  section.
+
 ## [1.2.9] — 2026-08-13
 
 - **The rabbit went mech.** Live-visited sites now drop supply crates
