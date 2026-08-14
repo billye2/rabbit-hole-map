@@ -172,6 +172,18 @@ harness has caught five real bugs so far — extend it with every feature.
 
 ## Ideas discussed but not built
 
+- **Sprite redesign — required before the next store upload.** The user's
+  verdict on the mech-rabbit ship: the base rabbit sprite is too cartoonish.
+  Two harder-edged directions are mocked up and pitched (rendered as real
+  SVG against the map's sky/grass): **B "Chassis Scout"** — same silhouette,
+  seamed gunmetal hull panels, antenna-blade ears with joint sockets, sensor
+  lens eye; **C "Combat Frame"** — full angular graphite mecha, blade ears,
+  digitigrade foot, glowing slit visor. Direction not yet chosen (a mix is
+  on the table, e.g. B's body with C's ears). The rewrite is confined to
+  `buildRabbit()`/`buildCrate()` in `src/map/rabbit.ts` (attribute-fill
+  primitives; keep the armor-group/`setArmor`/`setOverdrive` structure) plus
+  the e2e element selectors — no gameplay changes. Regenerate
+  `marketing/store/` after.
 - Upload the latest release to the Web Store (package is ready; still needs
   a developer account). The privacy policy URL is this repo's own copy —
   the repo is public as of 2026-08-09:
