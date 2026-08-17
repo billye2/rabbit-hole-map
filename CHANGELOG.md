@@ -8,6 +8,18 @@ _next_ version first (preview the number with `npm run bump -- --dry`).
 `npm run release` refuses to run without it, and that section becomes the
 GitHub release notes verbatim via `npm run release:publish`.
 
+## [1.3.1] — 2026-08-16
+
+- **New icon: a bold white R on an orange gradient tile** — the
+  letterform-on-tile style, legible all the way down to 16px (the old
+  rabbit-in-hole badge wasn't). `icons/icon.svg` stays the single source
+  of truth; store icon and promo tiles picked it up.
+- Promo wordmark "Map" is purple now — the green had no contrast on the
+  sky-blue tiles.
+- Promo-video captions moved to just under the HUD bar so they no longer
+  cover the sprite rabbit running along the bottom; video re-recorded.
+- Housekeeping: `.DS_Store` untracked and ignored.
+
 ## [1.3.0] — 2026-08-14
 
 - **The rabbit is real pixel art now.** The drawn mascot is replaced by 36
