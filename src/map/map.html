@@ -92,6 +92,10 @@
         letter-spacing: 0.03em;
         white-space: nowrap;
       }
+      header h1 .mark {
+        vertical-align: -4px;
+        margin-right: 2px;
+      }
       header h1 .hole {
         color: var(--cherry);
       }
@@ -299,7 +303,10 @@
   </head>
   <body>
     <header>
-      <h1>🐰 Rabbit <span class="hole">Hole</span> <span class="map">Map</span></h1>
+      <h1>
+        <img class="mark" src="../../icons/icon32.png" alt="" width="20" height="20" />
+        Rabbit <span class="hole">Hole</span> <span class="map">Map</span>
+      </h1>
       <span class="tipwrap" data-tip="Choose which rabbit hole to revisit"
         ><select id="session-select" aria-label="Choose which rabbit hole to revisit"></select
       ></span>
