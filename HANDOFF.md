@@ -29,7 +29,8 @@ mech rabbit below); the only remaining pre-upload task is regenerating
 | 1.2.7   | v1.2.7     | ✓   | skipped (superseded before upload)                |
 | 1.2.8   | v1.2.8     | ✓   | skipped (superseded by the mech-rabbit release)   |
 | 1.2.9   | v1.2.9     | ✓   | skipped (superseded by the sprite-forms release)  |
-| 1.3.0   | v1.3.0     | ✓   | **ready — regen `marketing/store/`, then upload** |
+| 1.3.0   | v1.3.0     | ✓   | skipped (superseded by the R-icon release)        |
+| 1.3.1   | v1.3.1     | ✓   | **ready — store assets current, upload the zip**  |
 
 Keep this table current: versions superseded before reaching the store get
 tags but no store upload. Record the submission date + review outcome here
