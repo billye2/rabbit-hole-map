@@ -52,7 +52,9 @@ try {
         pointer-events: none; z-index: 9999;
       }
       #promo-caption {
-        position: fixed; left: 50%; bottom: 42px; transform: translateX(-50%);
+        /* Below the HUD bar, not at the bottom — the sprite rabbit runs along
+           the bottom edge and the pill was covering it. */
+        position: fixed; left: 50%; top: 84px; transform: translateX(-50%);
         background: var(--hud); color: var(--ink); border: 3px solid var(--ink);
         border-radius: 999px; box-shadow: 0 4px 0 var(--ink);
         padding: 12px 26px; font-size: 21px; font-weight: 800;
@@ -68,6 +70,8 @@ try {
     const cap = document.createElement('div');
     cap.id = 'promo-caption';
     document.body.append(cap);
+    const hdr = document.querySelector('header');
+    if (hdr) cap.style.top = `${Math.round(hdr.getBoundingClientRect().bottom) + 14}px`;
     addEventListener(
       'mousemove',
       (e) => {
