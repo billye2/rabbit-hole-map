@@ -8,6 +8,14 @@ _next_ version first (preview the number with `npm run bump -- --dry`).
 `npm run release` refuses to run without it, and that section becomes the
 GitHub release notes verbatim via `npm run release:publish`.
 
+## [1.3.2] — 2026-08-16
+
+- **Page headers wear the real icon.** The popup, map, and options
+  headers embed the R-on-orange icon instead of the 🐰 emoji, so the
+  in-app branding always matches the toolbar icon.
+- Store screenshots, tiles, and the promo video re-captured with the new
+  headers.
+
 ## [1.3.1] — 2026-08-16
 
 - **New icon: a bold white R on an orange gradient tile** — the
