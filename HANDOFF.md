@@ -19,18 +19,18 @@ mech rabbit below); the only remaining pre-upload task is regenerating
 
 ### Versions: live / queued / skipped
 
-| Version | Tag        | Zip | Store status                                      |
-| ------- | ---------- | --- | ------------------------------------------------- |
-| 1.2.2   | — (no tag) | ✓   | skipped (predates rabbit mascot)                  |
-| 1.2.3   | v1.2.3     | ✓   | skipped                                           |
-| 1.2.4   | v1.2.4     | ✓   | skipped                                           |
-| 1.2.5   | v1.2.5     | ✓   | skipped (superseded before upload)                |
-| 1.2.6   | v1.2.6     | ✓   | skipped (superseded by the SEO-title release)     |
-| 1.2.7   | v1.2.7     | ✓   | skipped (superseded before upload)                |
-| 1.2.8   | v1.2.8     | ✓   | skipped (superseded by the mech-rabbit release)   |
-| 1.2.9   | v1.2.9     | ✓   | skipped (superseded by the sprite-forms release)  |
-| 1.3.0   | v1.3.0     | ✓   | skipped (superseded by the R-icon release)        |
-| 1.3.1   | v1.3.1     | ✓   | **ready — store assets current, upload the zip**  |
+| Version | Tag        | Zip | Store status                                     |
+| ------- | ---------- | --- | ------------------------------------------------ |
+| 1.2.2   | — (no tag) | ✓   | skipped (predates rabbit mascot)                 |
+| 1.2.3   | v1.2.3     | ✓   | skipped                                          |
+| 1.2.4   | v1.2.4     | ✓   | skipped                                          |
+| 1.2.5   | v1.2.5     | ✓   | skipped (superseded before upload)               |
+| 1.2.6   | v1.2.6     | ✓   | skipped (superseded by the SEO-title release)    |
+| 1.2.7   | v1.2.7     | ✓   | skipped (superseded before upload)               |
+| 1.2.8   | v1.2.8     | ✓   | skipped (superseded by the mech-rabbit release)  |
+| 1.2.9   | v1.2.9     | ✓   | skipped (superseded by the sprite-forms release) |
+| 1.3.0   | v1.3.0     | ✓   | skipped (superseded by the R-icon release)       |
+| 1.3.1   | v1.3.1     | ✓   | **ready — store assets current, upload the zip** |
 
 Keep this table current: versions superseded before reaching the store get
 tags but no store upload. Record the submission date + review outcome here
