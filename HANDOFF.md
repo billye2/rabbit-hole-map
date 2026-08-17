@@ -92,7 +92,7 @@ Codebase notes that aren't ADRs:
   regenerate assets after icon changes. The popup/map/options `<h1>`s embed
   `icons/icon32.png` too (no emoji), so an icon change also means refreshing
   the e2e visual snapshots (`npx playwright test e2e/visual.spec.mjs
-  --update-snapshots`) and `npm run assets`.
+--update-snapshots`) and `npm run assets`.
 - **The mech rabbit**: behaviour is the pure Gameplay Step
   (`src/map/gameplay.ts`, `stepRabbit(state, input) → {state, events}` with
   clock/rng/viewport injected); `src/map/rabbit.ts` is the paint adapter
