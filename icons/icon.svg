@@ -1,19 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <!-- The white rabbit peeking out of its hole, on the sky-blue badge.
-       Same geometry as the old hand-rolled encoder (unit coords × 128):
-       paint order bottom-up = sky, hole, ears (white, pink inner), head,
-       nose, eyes. -->
-  <clipPath id="disc"><circle cx="64" cy="64" r="64"/></clipPath>
-  <g clip-path="url(#disc)">
-    <rect width="128" height="128" fill="#4aa3ff"/>
-    <ellipse cx="64" cy="102.4" rx="46.08" ry="14.08" fill="#2b2857"/>
-    <g stroke-linecap="round">
-      <path d="M50.56 20.48V53.76M77.44 20.48V53.76" stroke="#ffffff" stroke-width="16.128"/>
-      <path d="M50.56 25.6V48.64M77.44 25.6V48.64" stroke="#ff9eb5" stroke-width="6.912"/>
-    </g>
-    <circle cx="64" cy="74.24" r="27.52" fill="#ffffff"/>
-    <circle cx="64" cy="78.72" r="2.688" fill="#ff9eb5"/>
-    <circle cx="55.68" cy="71.04" r="3.072" fill="#2b2857"/>
-    <circle cx="72.32" cy="71.04" r="3.072" fill="#2b2857"/>
-  </g>
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="128" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffa94d"/>
+      <stop offset="1" stop-color="#f76b15"/>
+    </linearGradient>
+  </defs>
+  <!-- rounded-square tile (same letterform-on-tile family as pdfxtn's M) -->
+  <rect x="0" y="0" width="128" height="128" rx="30" fill="url(#bg)"/>
+  <!-- soft top highlight -->
+  <rect x="0" y="0" width="128" height="62" rx="30" fill="#ffffff" opacity="0.10"/>
+  <!-- bold R (Rabbit Hole) -->
+  <path d="M 46 92 L 46 40 L 66 40 A 15 15 0 0 1 66 70 L 46 70 M 64 70 L 84 92"
+        fill="none" stroke="#ffffff" stroke-width="14"
+        stroke-linejoin="round" stroke-linecap="round"/>
 </svg>

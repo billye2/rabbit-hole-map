@@ -1,4 +1,4 @@
-// Rasterize icons/icon.svg (the white rabbit peeking from its hole) to the
+// Rasterize icons/icon.svg (the white R on the orange tile) to the
 // extension's PNG icon sizes. The SVG is the single source of truth — never
 // hand-export sizes. (Replaced the hand-rolled analytic PNG encoder; same
 // geometry, now editable as vector art. resvg pipeline as in pdfxtn.)

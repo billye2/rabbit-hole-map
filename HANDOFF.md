@@ -82,7 +82,8 @@ Codebase notes that aren't ADRs:
   freezes all sim nodes onto that grid and zoom-fits. `userPinned` (gold
   rings) is tracked separately from sim-level pinning precisely because
   untangle pins everything — don't collapse the two.
-- **Icon**: a white rabbit peeking from its hole. Source of truth is
+- **Icon**: a bold white R on an orange gradient tile (same letterform-on-tile
+  family as pdfxtn's M). Source of truth is
   `icons/icon.svg`; `npm run icons` rasterizes 16/32/48/128 PNGs via resvg
   (`gen-icons.mjs` — it replaced a hand-rolled analytic PNG encoder with
   identical geometry). The store icon and promo tiles derive from it —
