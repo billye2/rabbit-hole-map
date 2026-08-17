@@ -81,15 +81,15 @@ a new zip + review round, so keep it stable. The repo/dev name stays plain
 
 Upload from `marketing/store/` (regenerate with `npm run assets`):
 
-| File                          | Where it goes                    |
-| ----------------------------- | -------------------------------- |
-| `store-icon-128.png`          | Store listing icon               |
-| `screenshot-1.png` … `-5.png` | Screenshots, in order (1280×800) |
-| `promo-tile-440x280.png`      | Small promo tile                 |
-| `marquee-1400x560.png`        | Marquee promo tile               |
+| File                          | Where it goes                                                      |
+| ----------------------------- | ------------------------------------------------------------------ |
+| `store-icon-128.png`          | Store listing icon                                                 |
+| `screenshot-1.png` … `-6.png` | Screenshots, 1280×800 — the store caps a listing at 5, pick 5 of 6 |
+| `promo-tile-440x280.png`      | Small promo tile                                                   |
+| `marquee-1400x560.png`        | Marquee promo tile                                                 |
 
 Screenshot order is the pitch: **the constellation → untangled, one click
-later → the replay → arrange & pin → the scoreboard**.
+later → the replay → arrange & pin → the scoreboard → the growth ladder**.
 
 Promo video: `marketing/store/promo-video.webm` (~40s, regenerate with
 `npm run assets:video`). Upload it to YouTube and paste the URL here:

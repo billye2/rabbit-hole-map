@@ -11,7 +11,7 @@ npm run assets          # rebuild every asset (needs Chrome for Testing, see bel
 | File                          | Size     | Where it goes                                 |
 | ----------------------------- | -------- | --------------------------------------------- |
 | `store-icon-128.png`          | 128×128  | Store listing icon (copy of the shipped icon) |
-| `screenshot-1.png` … `-5.png` | 1280×800 | Screenshots — order below                     |
+| `screenshot-1.png` … `-6.png` | 1280×800 | Screenshots — order below                     |
 | `promo-tile-440x280.png`      | 440×280  | Small promo tile                              |
 | `marquee-1400x560.png`        | 1400×560 | Marquee promo tile                            |
 
@@ -23,6 +23,9 @@ Screenshot order is the pitch:
 3. **Replay** — mid-descent, scrubber at ~55%.
 4. **Arrange & pin** — two gold-pinned nodes plus a tooltip bubble.
 5. **The scoreboard** — popup with pages/hops/deepest burrow/time wasted.
+6. **The growth ladder** — a designed slide: the five sprite forms with
+   milestone pills ("Browse websites. Watch your rabbit GROW."). Note the
+   Web Store caps a listing at 5 screenshots — pick 5 of the 6 at upload.
 
 ## How it's built
 
@@ -32,9 +35,13 @@ wikipedia spiral → trebuchet memes), and screenshots the actual live pages —
 map, popup, empty state. Nothing is mocked, so assets can't drift from the
 shipped UI. Stills render at 2× and are downscaled with `sips` for crisp text.
 
-The promo tiles come from `stage/promo.html` (`?variant=tile|marquee`) — the
+The promo tiles and the growth slide come from `stage/promo.html`
+(`?variant=tile|marquee|growth`) — the
 sky, wordmark, shipped icon, and a hand-drawn constellation SVG in the same
-palette. The store icon is a straight copy of `icons/icon128.png`.
+palette. The growth slide's base-form sprite is `stage/front-face.png` —
+`stage/gen-front-face.mjs` paints cannon-style eyes on the faceless
+`front-0.png` frame (marketing-only; gameplay sprites untouched). The store
+icon is a straight copy of `icons/icon128.png`.
 
 Chrome for Testing is required because branded Chrome ≥ 137 removed
 `--load-extension`. Default path: `.cache/cft/...` (see HANDOFF.md); override

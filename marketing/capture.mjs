@@ -140,6 +140,13 @@ try {
   await tile.goto(stageUrl + '?variant=marquee', { waitUntil: 'load' });
   await sleep(400);
   await shoot(tile, 'marquee-1400x560.png', 1400, 560);
+  // 6 — the growth ladder, a designed slide from the same stage page (the
+  // sprite forms + milestone pills; front-face.png comes from
+  // stage/gen-front-face.mjs).
+  await tile.setViewport({ width: 1280, height: 800, deviceScaleFactor: 2 });
+  await tile.goto(stageUrl + '?variant=growth', { waitUntil: 'load' });
+  await sleep(400);
+  await shoot(tile, 'screenshot-6.png', 1280, 800);
   await tile.close();
 } finally {
   await browser.close();

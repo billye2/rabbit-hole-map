@@ -102,6 +102,108 @@
       body.marquee svg.constellation {
         filter: drop-shadow(0 4px 0 rgba(43, 40, 87, 0.3));
       }
+
+      /* --- growth screenshot 1280x800: the sprite ladder on the map's ground --- */
+      body.growth {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      body.growth .headline {
+        margin-top: 92px;
+        font-size: 52px;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        text-align: center;
+      }
+      body.growth .headline .grow {
+        color: #ffd60a;
+        text-shadow: 0 3px 0 rgba(43, 40, 87, 0.45);
+      }
+      body.growth .subline {
+        margin-top: 18px;
+        font-size: 24px;
+        font-weight: 700;
+        color: #fff6d8;
+        text-shadow: 0 2px 0 rgba(43, 40, 87, 0.4);
+      }
+      body.growth .ground {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 96px;
+        background: #52dcc8;
+        border-top: 4px solid #35bfae;
+      }
+      body.growth .ladder {
+        z-index: 2;
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 96px;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        gap: 34px;
+        padding: 0 40px;
+      }
+      body.growth .form {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0;
+      }
+      body.growth .form img {
+        image-rendering: pixelated;
+        filter: drop-shadow(0 4px 0 rgba(43, 40, 87, 0.25));
+      }
+      body.growth .form .plate {
+        border-radius: 999px;
+        padding: 5px 16px;
+        font-size: 16px;
+        font-weight: 700;
+        white-space: nowrap;
+        position: relative;
+        top: 62px;
+      }
+      body.growth .arrow {
+        align-self: center;
+        margin-bottom: 46px;
+        filter: drop-shadow(0 3px 0 rgba(43, 40, 87, 0.3));
+      }
+      /* keep the shared clouds off the headline and the tank */
+      body.growth .cloud:nth-of-type(1) {
+        left: 4% !important;
+        top: 36% !important;
+      }
+      body.growth .cloud:nth-of-type(2) {
+        left: 82% !important;
+        top: 28% !important;
+      }
+      body.growth .cloud:nth-of-type(3) {
+        right: 40% !important;
+        bottom: 42% !important;
+      }
+      body.growth .crate {
+        position: absolute;
+        top: -20px;
+        width: 34px;
+        height: 34px;
+        background: #c98a3d;
+        border: 3px solid #7a4a1d;
+        border-radius: 5px;
+        box-shadow: inset 0 0 0 3px #e0a85e;
+        transform: rotate(-7deg);
+      }
+      body.growth .crate::after {
+        content: '';
+        position: absolute;
+        inset: 3px;
+        background:
+          linear-gradient(to top right, transparent 46%, #7a4a1d 46%, #7a4a1d 54%, transparent 54%),
+          linear-gradient(to bottom right, transparent 46%, #7a4a1d 46%, #7a4a1d 54%, transparent 54%);
+      }
     </style>
   </head>
   <body>
@@ -145,6 +247,79 @@
           <circle cx="490" cy="300" r="16" fill="#00f5d4" />
         </g>
       </svg>
+    </template>
+
+    <template id="growth-t">
+      <div class="headline">Browse websites. Watch your rabbit <span class="grow">GROW</span>.</div>
+      <div class="subline">Every page you visit drops a crate — feed the mech, evolve the forms.</div>
+      <div class="ladder">
+        <div class="form">
+          <img src="front-face.png" style="height: 96px" alt="" />
+          <div class="plate">Start</div>
+        </div>
+        <svg class="arrow" width="34" height="26" viewBox="0 0 34 26">
+          <path
+            d="M2 13h22M18 4l10 9-10 9"
+            fill="none"
+            stroke="#ffffff"
+            stroke-width="5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+        <div class="form">
+          <img src="../../src/map/sprites/cannon-idle-0.png" style="height: 120px" alt="" />
+          <div class="plate">10 crates</div>
+        </div>
+        <svg class="arrow" width="34" height="26" viewBox="0 0 34 26">
+          <path
+            d="M2 13h22M18 4l10 9-10 9"
+            fill="none"
+            stroke="#ffffff"
+            stroke-width="5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+        <div class="form">
+          <img src="../../src/map/sprites/battle-idle-0.png" style="height: 150px" alt="" />
+          <div class="plate">20 crates</div>
+        </div>
+        <svg class="arrow" width="34" height="26" viewBox="0 0 34 26">
+          <path
+            d="M2 13h22M18 4l10 9-10 9"
+            fill="none"
+            stroke="#ffffff"
+            stroke-width="5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+        <div class="form">
+          <img src="../../src/map/sprites/jeep-idle-0.png" style="height: 190px" alt="" />
+          <div class="plate">40 crates</div>
+        </div>
+        <svg class="arrow" width="34" height="26" viewBox="0 0 34 26">
+          <path
+            d="M2 13h22M18 4l10 9-10 9"
+            fill="none"
+            stroke="#ffffff"
+            stroke-width="5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+        <div class="form">
+          <img src="../../src/map/sprites/tank-idle-1.png" style="height: 225px" alt="" />
+          <div class="plate">60 crates</div>
+        </div>
+      </div>
+      <div class="ground">
+        <div class="crate" style="left: 9%"></div>
+        <div class="crate" style="left: 15%; transform: rotate(5deg); top: -12px"></div>
+        <div class="crate" style="right: 12%"></div>
+        <div class="crate" style="right: 6%; transform: rotate(9deg); top: -10px"></div>
+      </div>
     </template>
 
     <script>
