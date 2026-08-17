@@ -14,8 +14,9 @@ complete Web Store submission package exists: the latest
 `docs/STORE_LISTING.md`, assets in `marketing/store/` (screenshots, tiles,
 promo video), privacy docs in place. Not yet uploaded to the store. The
 sprite redesign has **landed** (the user's own pixel-art sheets, see The
-mech rabbit below); the only remaining pre-upload task is regenerating
-`marketing/store/` so the assets show the sprite rabbit.
+mech rabbit below) and `marketing/store/` is current (sprite rabbit, R
+icon, purple wordmark); the only remaining step is the store upload
+itself.
 
 ### Versions: live / queued / skipped
 
