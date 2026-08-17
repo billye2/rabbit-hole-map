@@ -32,7 +32,8 @@ itself.
 | 1.2.9   | v1.2.9     | ✓   | skipped (superseded by the sprite-forms release) |
 | 1.3.0   | v1.3.0     | ✓   | skipped (superseded by the R-icon release)       |
 | 1.3.1   | v1.3.1     | ✓   | skipped (superseded by the header-icon release)  |
-| 1.3.2   | v1.3.2     | ✓   | **ready — store assets current, upload the zip** |
+| 1.3.2   | v1.3.2     | ✓   | skipped (superseded by the growth-slide release) |
+| 1.3.3   | v1.3.3     | ✓   | **ready — store assets current, upload the zip** |
 
 Keep this table current: versions superseded before reaching the store get
 tags but no store upload. Record the submission date + review outcome here
